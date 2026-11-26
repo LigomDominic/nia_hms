@@ -1,0 +1,79 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge %}
+{% block title %}Consultation · {{ p.full_name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Consultation</h1>
+  <p><a href="{{ url_for('patients.profile', hospital_id=p.hospital_id) }}"><b>{{ p.full_name }}</b></a> · <span class="mono">{{ p.hospital_id }}</span> · {{ p.gender or '' }}{% if p.age is not none %}, {{ p.age }} yrs{% endif %} · Wallet {{ p.wallet_balance|money }}</p></div>
+  {{ badge(v.status, v.status_label) }}</div>
+
+<div class="grid grid-3">
+  <div class="card"><h3>Vitals</h3>
+    {% if v.has_vitals %}<div class="vitals"><span>Temp {{ v.temperature or '-' }}°C</span><span>BP {{ v.blood_pressure or '-' }}</span><span>Pulse {{ v.pulse or '-' }}</span><span>Resp {{ v.respiration or '-' }}</span><span>Wt {{ v.weight or '-' }}kg</span><span>SpO₂ {{ v.spo2 or '-' }}%</span></div>
+      <small>By {{ v.vitals_by.full_name if v.vitals_by else '-' }}, {{ v.vitals_at|dt }}</small>
+    {% else %}<p class="muted">Not recorded yet.</p>{% endif %}
+    <div style="margin-top:.6rem"><a class="btn btn-sm btn-outline" href="{{ url_for('nurse.vitals', visit_id=v.id) }}">Record vitals</a></div>
+  </div>
+  <div class="card"><h3>Patient summary</h3><dl class="kv">
+    <dt>Complaint</dt><dd>{{ v.complaint or '-' }}</dd><dt>Allergies</dt><dd>{% if p.allergies %}<span class="badge red">{{ p.allergies }}</span>{% else %}None{% endif %}</dd>
+    <dt>Blood / Geno</dt><dd>{{ p.blood_group or '-' }} / {{ p.genotype or '-' }}</dd><dt>Previous visits</dt><dd>{{ p.visits|length - 1 }}</dd></dl></div>
+  <div class="card"><h3>Previous diagnoses</h3>
+    {% for pv in p.visits if pv.id != v.id and pv.diagnosis %}<p style="margin:.2rem 0"><small>{{ pv.created_at|d }}</small> — {{ pv.diagnosis }}</p>{% else %}<p class="muted">None.</p>{% endfor %}</div>
+</div>
+
+<form method="post" class="card">
+  <h3>Clinical notes</h3>
+  {% if S.voice_enabled == '1' %}<p class="muted no-print" style="margin-top:-.3rem"><small>Tip: click the microphone in a box and speak. Say "full stop", "comma" or "new line" for punctuation. Check the text before saving.</small></p>{% endif %}
+  <div class="field"><label for="complaint">Presenting complaint</label><textarea name="complaint" id="complaint" rows="3" data-voice placeholder="Click the mic and describe the patient's complaint">{{ v.complaint or '' }}</textarea></div>
+  <div class="field"><label>History / examination / notes</label><textarea name="notes" rows="5" data-voice>{{ v.notes or '' }}</textarea></div>
+  <div class="field"><label>Diagnosis</label><input name="diagnosis" data-voice value="{{ v.diagnosis or '' }}"></div>
+  <div class="btn-row"><button class="btn" name="action" value="save">Save notes</button>
+    <button class="btn btn-dark" name="action" value="complete" onclick="return confirm('Complete and close this consultation?')">Complete consultation</button></div>
+</form>
+
+<div class="grid grid-2">
+  <form method="post" action="{{ url_for('doctor.request_lab', visit_id=v.id) }}" class="card">
+    <h3>Request lab tests</h3>
+    <p class="muted" style="margin-top:0">Posted to the Cashier for payment (or auto-charged from the wallet), then sent to the Lab.</p>
+    <div style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:.5rem .8rem;margin-bottom:.8rem">
+      {% for cat, group in tests|groupby('category_label') %}<div class="test-cat">{{ cat }}</div>{% for t in group %}<label class="check" style="justify-content:space-between"><span><input type="checkbox" name="test_ids" value="{{ t.id }}">{{ t.name }}{% if t.sample_type %} <small class="muted">({{ t.sample_type }})</small>{% endif %}</span><small>{{ t.price|money }}</small></label>{% endfor %}{% else %}<p class="muted">No lab tests have been set up yet. An admin can add them under Lab Test Catalog.</p>{% endfor %}
+    </div>
+    <div class="field"><label>Clinical notes for lab</label><input name="clinical_notes" data-voice></div>
+    <button class="btn">Send test request</button>
+  </form>
+
+  <form method="post" action="{{ url_for('doctor.prescribe', visit_id=v.id) }}" class="card">
+    <h3>Prescribe drugs</h3>
+    <p class="muted" style="margin-top:0">Must be paid at the Cashier (or from wallet) before the Pharmacy dispenses.</p>
+    <table id="rx-table"><tr><th>Drug</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Qty</th></tr>
+      {% for n in range(3) %}
+      <tr><td><select name="drug_id"><option value="">--</option>{% for d in drugs %}<option value="{{ d.id }}">{{ d.label }} · {{ d.unit_price|money }} ({{ d.quantity }} left)</option>{% endfor %}</select></td>
+        <td><input name="dosage" placeholder="1 tab"></td><td><input name="frequency" placeholder="2x daily"></td><td><input name="duration" placeholder="5 days"></td><td><input name="quantity" style="width:70px" placeholder="10"></td></tr>
+      {% endfor %}
+    </table>
+    <div class="btn-row" style="margin:.6rem 0"><button type="button" class="btn btn-sm btn-outline" onclick="addRow()">+ Add drug row</button></div>
+    <div class="field"><label>Notes for pharmacist</label><input name="rx_notes" data-voice></div>
+    <button class="btn">Send prescription</button>
+  </form>
+</div>
+
+<div class="grid grid-2">
+  <div class="card"><h3>Lab requests this visit</h3><table>
+    {% for r in p.lab_requests if r.visit_id == v.id %}
+    <tr><td>{{ docno('lab', r.id) }} {{ r.test_names }}</td><td>{{ badge(r.status, r.status_label) }}</td><td>{% if r.status == 'completed' %}<a class="btn btn-sm" href="{{ url_for('doctor.result', req_id=r.id) }}">Result</a>{% endif %}</td></tr>
+    {% else %}<tr><td class="empty">None yet.</td></tr>{% endfor %}</table></div>
+  <div class="card"><h3>Prescriptions this visit</h3><table>
+    {% for rx in p.prescriptions if rx.visit_id == v.id %}
+    <tr><td>{{ docno('rx', rx.id) }} {% for i in rx.items %}{{ i.drug_name }} × {{ i.quantity }}{{ ', ' if not loop.last }}{% endfor %}</td><td>{{ badge(rx.status, rx.status_label) }}</td></tr>
+    {% else %}<tr><td class="empty">None yet.</td></tr>{% endfor %}</table></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function addRow() {
+  var t = document.getElementById('rx-table');
+  var row = t.rows[1].cloneNode(true);
+  row.querySelectorAll('input').forEach(function (i) { i.value = ''; });
+  row.querySelector('select').selectedIndex = 0;
+  t.tBodies[0].appendChild(row);
+}
+</script>
+{% endblock %}

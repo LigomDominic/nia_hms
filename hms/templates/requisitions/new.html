@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}New station request{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>New station request</h1><p>Request drugs and supplies from Pharmacy for your station.</p></div>
+  <a class="btn btn-outline" href="{{ url_for('requisitions.index') }}">Back to requests</a></div>
+
+<form method="post" class="card">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="form-grid">
+    <div><label for="station">Requesting station *</label>
+      <select name="station" id="station" required>
+        {% for s in stations %}<option value="{{ s }}" {% if request.form.get('station') == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select></div>
+    <div><label for="note">Note (optional)</label><input name="note" id="note" maxlength="250" value="{{ request.form.get('note', '') }}" placeholder="e.g. For ward stock / tomorrow's list"></div>
+  </div>
+  <h3>Items</h3>
+  <p class="muted"><small>Pick a drug from the pharmacy inventory, or type the item name if it is not listed. Leave unused rows blank.</small></p>
+  <div class="table-wrap"><table>
+    <thead><tr><th style="width:34%">Drug (from inventory)</th><th style="width:30%">Or item name</th><th style="width:12%">Qty</th><th>Note</th></tr></thead>
+    <tbody>
+      {% for n in range(8) %}
+      <tr>
+        <td><select name="drug_id"><option value=""></option>
+          {% for d in drugs %}<option value="{{ d.id }}">{{ d.label }} ({{ d.quantity }} in stock)</option>{% endfor %}
+        </select></td>
+        <td><input name="item_name" maxlength="160" placeholder="e.g. Cotton wool, giving set"></td>
+        <td><input type="number" name="qty" min="0" max="9999" value=""></td>
+        <td><input name="item_note" maxlength="160" placeholder="optional"></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  <div class="btn-row" style="margin-top:.8rem"><button class="btn btn-lg">Send request to Pharmacy</button></div>
+</form>
+{% endblock %}

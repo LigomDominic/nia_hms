@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Staff Login · {{ HOSPITAL_NAME }}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/logo.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% include '_theme.html' %}
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <a class="brand" href="{{ url_for('main.landing') }}" style="text-decoration:none"><img class="logo-img" src="{{ url_for('static', filename='img/logo.svg') }}" alt="{{ HOSPITAL_NAME }}"><span>{{ HOSPITAL_NAME }}</span></a>
+    <h2 style="text-align:center">Staff Login</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
+    {% endwith %}
+    <form method="post">
+      <div class="field"><label for="username">Username</label><input id="username" name="username" required autofocus></div>
+      <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" required></div>
+      <button class="btn btn-dark btn-lg" style="width:100%;justify-content:center" type="submit">Log in</button>
+    </form>
+    <div class="demo">
+      <b>Demo accounts</b> (password <code>password123</code>):<br>
+      admin · cashier · doctor · visiting · nurse · lab · pharmacist · store · cleaner
+    </div>
+  </div>
+</div>
+</body>
+</html>

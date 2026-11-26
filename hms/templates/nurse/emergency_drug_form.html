@@ -1,0 +1,22 @@
+{% extends 'base.html' %}{% block title %}{{ 'Edit' if drug else 'Add' }} emergency drug{% endblock %}
+{% block content %}
+{% set f = form if form else {} %}
+{% macro val(name) %}{{ f.get(name) if f.get(name) is not none else ((drug[name] if drug and drug[name] is not none else '')) }}{% endmacro %}
+<div class="page-head"><div><h1>{{ 'Edit ' ~ drug.label if drug else 'Add emergency drug' }}</h1><p>Nurses' office stock</p></div>
+  <a class="btn btn-outline" href="{{ url_for('nurse.emergency') }}">Back</a></div>
+<form method="post" class="card">
+  <div class="form-grid">
+    <div class="field"><label for="name">Name *</label><input name="name" id="name" required value="{{ val('name') }}"></div>
+    <div class="field"><label for="form">Form</label><input name="form" id="form" value="{{ val('form') }}" placeholder="Injection, Tablet..."></div>
+    <div class="field"><label for="strength">Strength</label><input name="strength" id="strength" value="{{ val('strength') }}"></div>
+    <div class="field"><label for="unit">Unit</label><input name="unit" id="unit" value="{{ val('unit') or 'unit' }}" placeholder="ampoule, vial, tablet"></div>
+    <div class="field"><label for="reorder_level">Reorder level</label><input name="reorder_level" id="reorder_level" value="{{ val('reorder_level') or 5 }}"></div>
+    <div class="field"><label for="batch_no">Batch no.</label><input name="batch_no" id="batch_no" value="{{ val('batch_no') }}"></div>
+    <div class="field"><label for="expiry_date">Expiry date</label><input type="date" name="expiry_date" id="expiry_date" value="{{ drug.expiry_date.isoformat() if drug and drug.expiry_date else f.get('expiry_date', '') }}"></div>
+    {% if not drug %}<div class="field"><label for="quantity">Opening quantity</label><input name="quantity" id="quantity" value="{{ f.get('quantity', '0') }}"></div>{% endif %}
+  </div>
+  {% if drug %}<label class="check"><input type="checkbox" name="is_active" value="1" {% if drug.is_active %}checked{% endif %}> Active (uncheck to stop using this drug)</label>
+  <p class="muted">To change the quantity, use <a href="{{ url_for('nurse.emergency_stock', drug_id=drug.id) }}">Stock</a> so every change is recorded.</p>{% endif %}
+  <button class="btn btn-lg">Save</button>
+</form>
+{% endblock %}

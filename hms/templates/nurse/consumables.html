@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Consumables record{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Consumables record</h1><p>{{ p.full_name }} · <span class="mono">{{ p.hospital_id }}</span></p></div>
+  <a class="btn btn-outline" href="{{ url_for('patients.profile', hospital_id=p.hospital_id) }}">Patient profile</a>
+</div>
+{% if can_module('consumables', 'manage') %}
+<form method="post" class="card">
+  <h3>Record consumables used</h3>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="form-grid">
+    <div><label for="record_date">Date *</label><input type="date" id="record_date" name="record_date" value="{{ request.form.get('record_date', today) }}" max="{{ today }}" required></div>
+    <div><label for="name">Name / details</label><input id="name" name="name" maxlength="160" data-voice value="{{ request.form.get('name', '') }}" placeholder="e.g. Dressing change"></div>
+    {% for key, label in item_fields %}
+    <div><label for="{{ key }}">{{ label }}</label><input type="number" id="{{ key }}" name="{{ key }}" min="0" max="9999" value="{{ request.form.get(key, 0) }}"></div>
+    {% endfor %}
+  </div>
+  <button class="btn" type="submit">Save record</button>
+</form>
+{% endif %}
+<div class="card">
+  <h3>Usage history</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Name</th>{% for key, label in item_fields %}<th>{{ label }}</th>{% endfor %}<th>Recorded by</th></tr></thead>
+    <tbody>
+      {% for e in entries.items %}
+      <tr><td>{{ e.record_date|d }}</td><td>{{ e.name or '-' }}</td>
+        {% for key, label in item_fields %}<td class="num">{{ e[key] }}</td>{% endfor %}
+        <td>{{ e.recorded_by.full_name }}<br><small class="muted">{{ e.created_at|dt }}</small></td></tr>
+      {% else %}<tr><td colspan="9">No consumables recorded for this patient yet.</td></tr>{% endfor %}
+      <tr><td><b>Total</b></td><td></td>{% for key, label in item_fields %}<td class="num"><b>{{ totals[key] }}</b></td>{% endfor %}<td></td></tr>
+    </tbody>
+  </table></div>
+</div>
+<div class="btn-row">
+  {% if entries.has_prev %}<a class="btn btn-outline" href="{{ url_for('consumables.record', hospital_id=p.hospital_id, page=entries.prev_num) }}">Newer records</a>{% endif %}
+  {% if entries.has_next %}<a class="btn btn-outline" href="{{ url_for('consumables.record', hospital_id=p.hospital_id, page=entries.next_num) }}">Older records</a>{% endif %}
+</div>
+{% endblock %}

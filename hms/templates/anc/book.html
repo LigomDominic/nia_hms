@@ -1,0 +1,79 @@
+{% extends 'base.html' %}{% from '_macros.html' import field, select %}
+{% block title %}{{ 'Edit ANC card' if anc else 'Book ANC' }} · {{ p.full_name }}{% endblock %}
+{% block content %}
+{% macro dfmt(v) %}{{ v.strftime('%Y-%m-%d') if v else '' }}{% endmacro %}
+<div class="page-head"><div><h1>{{ 'Edit ANC booking' if anc else 'Ante-natal booking' }}</h1>
+  <p>{{ p.full_name }} · <span class="mono">{{ p.hospital_id }}</span> · {{ p.gender or '-' }}{% if p.age is not none %} · {{ p.age }} yrs{% endif %}</p></div></div>
+<form method="post" class="card" style="max-width:980px">
+  <fieldset><legend>Patient &amp; social</legend>
+    <div class="form-grid">
+      <div class="field"><label>Address</label><input value="{{ p.address or '' }}" disabled></div>
+      {{ field('ethnic_group', 'Ethnic group', anc.ethnic_group if anc else '') }}
+      {{ field('occupation', 'Occupation', anc.occupation if anc else '') }}
+      {{ field('husband_occupation', "Husband's occupation", anc.husband_occupation if anc else '') }}
+      <div class="field"><label for="consultant_id">Consultant</label>
+        <select name="consultant_id" id="consultant_id"><option value="">-- Not assigned --</option>
+          {% for d in doctors %}<option value="{{ d.id }}" {% if anc and anc.consultant_id == d.id %}selected{% endif %}>{{ d.display_name }}{% if d.specialty %} ({{ d.specialty }}){% endif %}</option>{% endfor %}
+        </select></div>
+    </div>
+  </fieldset>
+  <fieldset><legend>Pregnancy</legend>
+    <div class="form-grid">
+      {{ field('gravida', 'Gravida', anc.gravida if anc else '') }}
+      {{ field('para', 'Para', anc.para if anc else '') }}
+      {{ field('lmp', 'LMP', dfmt(anc.lmp) if anc else '', type='date') }}
+      {{ field('edd', 'EDD (auto = LMP + 40 weeks)', dfmt(anc.edd) if anc else '', type='date') }}
+      {{ field('quickening_date', 'Date quickening', dfmt(anc.quickening_date) if anc else '', type='date') }}
+      {{ field('height', 'Height', anc.height if anc else '', placeholder='e.g. 1.62 m') }}
+      {{ field('weight', 'Booking weight', anc.weight if anc else '', placeholder='e.g. 68 kg') }}
+    </div>
+  </fieldset>
+  <fieldset><legend>Histories</legend>
+    <div class="field"><label>Past obstetric history</label><textarea name="past_obstetric_history" data-voice>{{ anc.past_obstetric_history or '' if anc }}</textarea></div>
+    <div class="field"><label>Past medical history</label><textarea name="past_medical_history" data-voice>{{ anc.past_medical_history or '' if anc }}</textarea></div>
+    <div class="field"><label>Family history</label><textarea name="family_history" data-voice>{{ anc.family_history or '' if anc }}</textarea></div>
+    <div class="field"><label>Special points</label><textarea name="special_points" data-voice>{{ anc.special_points or '' if anc }}</textarea></div>
+    <div class="field"><label>Note</label><textarea name="notes" data-voice placeholder="General notes about this pregnancy">{{ anc.notes or '' if anc }}</textarea></div>
+  </fieldset>
+  <fieldset><legend>History review</legend>
+    <div class="form-grid">
+      {{ field('hx_oedema', 'Oedema', anc.hx_oedema if anc else '') }}
+      {{ field('hx_headache', 'Headache', anc.hx_headache if anc else '') }}
+      {{ field('hx_bowels', 'Bowels', anc.hx_bowels if anc else '') }}
+      {{ field('hx_breath', 'Breath', anc.hx_breath if anc else '') }}
+      {{ field('hx_micturition', 'Micturition', anc.hx_micturition if anc else '') }}
+      {{ field('hx_discharge', 'Discharge', anc.hx_discharge if anc else '') }}
+    </div>
+  </fieldset>
+  <fieldset><legend>First examination</legend>
+    <div class="form-grid">
+      {{ field('ex_teeth', 'Teeth', anc.ex_teeth if anc else '') }}
+      {{ field('ex_breasts', 'Breasts', anc.ex_breasts if anc else '') }}
+      {{ field('ex_lungs', 'Lungs', anc.ex_lungs if anc else '') }}
+      {{ field('ex_heart', 'Heart', anc.ex_heart if anc else '') }}
+      {{ field('ex_varicose', 'Varicose veins', anc.ex_varicose if anc else '') }}
+      {{ field('ex_pelvics', 'Pelvics', anc.ex_pelvics if anc else '') }}
+      {{ field('ex_cervical', 'Cervical smear', anc.ex_cervical if anc else '') }}
+      {{ field('ex_date', 'Examination date', dfmt(anc.ex_date) if anc else '', type='date') }}
+    </div>
+    <div class="field"><label>Special observations</label><textarea name="ex_observations" data-voice>{{ anc.ex_observations or '' if anc }}</textarea></div>
+  </fieldset>
+  <fieldset><legend>Investigations (booking)</legend>
+    <div class="form-grid">
+      {{ field('inv_blood_group', 'ABO blood group', anc.inv_blood_group if anc else '') }}
+      {{ field('inv_rhesus', 'Rhesus blood group', anc.inv_rhesus if anc else '') }}
+      {{ field('inv_antibodies', 'Anti-bodies', anc.inv_antibodies if anc else '') }}
+      {{ field('inv_genotype', 'Genotype', anc.inv_genotype if anc else '') }}
+      {{ field('inv_vdrl', 'VDRL', anc.inv_vdrl if anc else '') }}
+      {{ field('inv_rtv', 'RTV (HIV)', anc.inv_rtv if anc else '') }}
+      {{ field('inv_others', 'Others', anc.inv_others if anc else '') }}
+      {{ field('inv_date', 'Investigations date', dfmt(anc.inv_date) if anc else '', type='date') }}
+    </div>
+  </fieldset>
+  {% if not anc and fee > 0 %}<p class="muted">A booking fee of <b>{{ fee|money }}</b> will be billed to the patient's account.</p>{% endif %}
+  <div class="btn-row">
+    <button class="btn btn-lg">{{ 'Save changes' if anc else 'Open ANC card' }}</button>
+    <a class="btn btn-outline" href="{{ url_for('anc.card', anc_id=anc.id) if anc else url_for('patients.profile', hospital_id=p.hospital_id) }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

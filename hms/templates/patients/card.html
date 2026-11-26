@@ -1,0 +1,24 @@
+{% extends 'base.html' %}{% block title %}Patient card{% endblock %}
+{% set paper = request.args.get('paper') if request.args.get('paper') in ('A4','A5','letter','80mm','58mm') else S.receipt_paper %}
+{% block print_page %}{{ page_css(paper) }}{% endblock %}
+{% block content %}
+<div class="id-card{% if paper in ('80mm', '58mm') %} id-thermal{% if paper == '58mm' %} w58{% endif %}{% endif %}">
+  <div class="top"><img class="card-logo" src="{{ url_for('static', filename='img/logo.svg') }}" alt="">{{ HOSPITAL_NAME }} · PATIENT CARD</div>
+  <div class="body">
+    <div class="hid">{{ p.hospital_id }}</div>
+    <h2 style="margin-top:.7rem">{{ p.full_name }}</h2>
+    <dl class="kv"><dt>Gender</dt><dd>{{ p.gender or '-' }}</dd><dt>Date of birth</dt><dd>{{ p.date_of_birth|d }}</dd>
+      <dt>Blood / Genotype</dt><dd>{{ p.blood_group or '-' }} / {{ p.genotype or '-' }}</dd><dt>Phone</dt><dd>{{ p.phone or '-' }}</dd>
+      <dt>Registered</dt><dd>{{ p.created_at|d }}</dd></dl>
+    <img class="qr" src="{{ p.hospital_id|qr }}" alt="{{ p.hospital_id }}" style="width:26mm;margin:.8rem auto .4rem">
+    <p class="muted" style="font-size:.8rem;margin-bottom:0">Present this card at every visit. Your hospital ID gives staff access to your records and e-wallet.</p>
+  </div>
+</div>
+<div class="btn-row no-print" style="justify-content:center">
+  <a class="btn" href="{{ url_for('patients.card', hospital_id=p.hospital_id, paper='A4', print='force') }}">Print A4</a>
+  <a class="btn btn-dark" href="{{ url_for('patients.card', hospital_id=p.hospital_id, paper='80mm', print='force') }}">Print 80 mm</a>
+  <a class="btn btn-dark" href="{{ url_for('patients.card', hospital_id=p.hospital_id, paper='58mm', print='force') }}">Print 58 mm</a>
+  <a class="btn btn-outline" href="{{ url_for('patients.profile', hospital_id=p.hospital_id) }}">Back to profile</a></div>
+<p class="muted no-print" style="text-align:center">Card prints at the size picked above (default follows the receipt-paper setting, currently: {{ S.receipt_paper }}). Pick the size that matches the printer.</p>
+{% endblock %}
+{% block scripts %}{% if request.args.get('print') %}<script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });</script>{% endif %}{% endblock %}

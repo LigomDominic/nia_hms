@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}New visit{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>New visit</h1><p><span class="mono">{{ p.hospital_id }}</span> · {{ p.full_name }} · Wallet {{ p.wallet_balance|money }}</p></div></div>
+{% if dormant_days > retrieval_days %}<div class="flash warning">File retrieval fee applies: this patient last visited <b>{{ dormant_days }} days</b> ago.
+  {% if retrieval_unpaid %}An unpaid file-retrieval bill is already outstanding.{% else %}<b>{{ retrieval_fee|money }}</b> will be billed automatically.{% endif %}</div>{% endif %}
+<form method="post" class="card">
+  {% include 'cashier/_consult_fields.html' %}
+  <div class="field" style="max-width:320px"><label>Payment reference</label><input name="reference"></div>
+  <div class="btn-row"><button class="btn btn-lg">Send to doctor</button><a class="btn btn-outline" href="{{ url_for('patients.profile', hospital_id=p.hospital_id) }}">Cancel</a></div>
+</form>
+{% endblock %}

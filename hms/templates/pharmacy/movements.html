@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% block title %}Drug movements{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Pharmacy stock movements</h1></div>
+<div class="card"><div class="table-wrap"><table><tr><th>Date</th><th>Drug</th><th>Type</th><th class="num">Change</th><th class="num">Balance</th><th>Note</th><th>By</th></tr>
+  {% for m in moves %}<tr><td>{{ m.created_at|dt }}</td><td><a href="{{ url_for('pharmacy.stock', drug_id=m.drug_id) }}">{{ m.drug.label }}</a></td><td>{{ m.reason|capitalize }}</td><td class="num">{{ '%+d'|format(m.change) }}</td><td class="num">{{ m.balance_after }}</td><td>{{ m.note or '' }}</td><td>{{ m.user.full_name if m.user else 'System' }}</td></tr>
+  {% else %}<tr><td colspan="7" class="empty">No movements.</td></tr>{% endfor %}</table></div></div>
+{% endblock %}

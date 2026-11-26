@@ -1,0 +1,35 @@
+{% extends 'base.html' %}{% from '_macros.html' import field %}
+{% block title %}{{ 'Add' if is_new else 'Edit' }} staff{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ 'Add staff member' if is_new else 'Edit ' ~ user.full_name }}</h1></div>
+<form method="post" class="card" style="max-width:820px"><div class="form-grid">
+  {{ field('full_name', 'Full name', user.full_name, required=True) }}
+  {{ field('username', 'Username', user.username, required=True) }}
+  <div class="field"><label>Role *</label><select name="role" required>{% for k, v in ROLES.items() %}<option value="{{ k }}" {% if user.role == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+  {{ field('specialty', 'Specialty (doctors)', user.specialty) }}
+  {{ field('phone', 'Phone', user.phone) }}
+  {{ field('email', 'Email', user.email, type='email') }}
+  {{ field('password', 'Password' if is_new else 'New password (leave blank to keep)', '', type='password', required=is_new) }}
+</div>
+<label class="check"><input type="checkbox" name="is_active_user" value="1" {% if user.is_active_user %}checked{% endif %}> Account active</label>
+
+<h3 style="margin-top:1.2rem">Module access</h3>
+<p>Choose what this staff member can do in each module. <b>Inherit role default</b> keeps the normal access for their role; <b>View only</b> lets them open the module but not create or change records; <b>Full access</b> grants all actions — even for modules outside their role. Administrators always have full access regardless of these settings.</p>
+<div class="table-wrap"><table>
+  <tr><th>Module</th><th>Access</th><th>Default for {{ user.role_label if user.role else 'role' }}</th></tr>
+  {% for key, (label, view_roles, manage_roles) in modules.items() %}
+  <tr>
+    <td>{{ label }}</td>
+    <td><select name="access_{{ key }}" style="width:auto">
+      <option value="" {% if not access.get(key) %}selected{% endif %}>Inherit role default</option>
+      <option value="none" {% if access.get(key) == 'none' %}selected{% endif %}>No access</option>
+      <option value="view" {% if access.get(key) == 'view' %}selected{% endif %}>View only</option>
+      <option value="manage" {% if access.get(key) == 'manage' %}selected{% endif %}>Full access</option>
+    </select></td>
+    <td class="muted">{% if key == 'administration' %}Admins only{% elif user.role in manage_roles %}Full access{% elif user.role in view_roles %}View only{% else %}No access{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+
+<div class="btn-row" style="margin-top:1rem"><button class="btn">Save</button><a class="btn btn-outline" href="{{ url_for('admin.users') }}">Cancel</a></div></form>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'base.html' %}{% block title %}Cleaning tasks{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Cleaning tasks</h1></div>
+<div class="grid grid-3">
+  <form method="post" class="card"><h3>Assign task</h3>
+    <div class="field"><label>Area *</label><input name="area" required placeholder="e.g. Ward A, Theatre, Toilets"></div>
+    <div class="field"><label>Instructions</label><input name="description"></div>
+    <div class="field"><label>Cleaner *</label><select name="assigned_to_id" required>{% for c in cleaners %}<option value="{{ c.id }}">{{ c.full_name }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Due date</label><input type="date" name="due_date" value="{{ today.isoformat() }}"></div>
+    <button class="btn">Assign</button></form>
+  <div class="card" style="grid-column: span 2"><table><tr><th>Due</th><th>Area</th><th>Cleaner</th><th>Status</th><th>Done at</th><th>Remark</th></tr>
+    {% for t in tasks %}<tr><td>{{ t.due_date|d }}</td><td><b>{{ t.area }}</b><br><small>{{ t.description or '' }}</small></td><td>{{ t.assigned_to.full_name if t.assigned_to else '-' }}</td>
+      <td>{% if t.status == 'done' %}<span class="badge green">Done</span>{% else %}<span class="badge warn">Pending</span>{% endif %}</td><td>{{ t.completed_at|dt }}</td><td>{{ t.remark or '' }}</td></tr>
+    {% else %}<tr><td colspan="6" class="empty">No tasks.</td></tr>{% endfor %}</table></div>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge, patient_link %}
+{% block title %}Cashier{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Cashier · Payment Queue</h1><p>Bills posted by doctors wait here. Once paid, tests go to the Lab and drugs go to the Pharmacy automatically.</p></div>
+  <a class="btn btn-lg" href="{{ url_for('cashier.register') }}">+ Register new patient</a></div>
+<div class="grid grid-4" style="margin-bottom:1.2rem">
+  <div class="stat dark"><div class="label">Collected today</div><div class="value">{{ total_today|money }}</div></div>
+  <div class="stat"><div class="label">Cash / POS / Transfer</div><div class="value" style="font-size:1.05rem">{{ totals.get('cash',0)|money }} · {{ totals.get('pos',0)|money }} · {{ totals.get('transfer',0)|money }}</div></div>
+  <div class="stat"><div class="label">Auto-charged from wallets</div><div class="value">{{ totals.get('wallet',0)|money }}</div></div>
+  <div class="stat"><div class="label">New patients today</div><div class="value">{{ new_today }}</div></div>
+</div>
+<div class="card">
+  <div class="card-head"><h2>Awaiting payment ({{ pending|length }})</h2></div>
+  <div class="table-wrap"><table>
+    <tr><th>#</th><th>Posted</th><th>Patient</th><th>Service</th><th>Requested by</th><th class="num">Balance</th><th class="num">Wallet</th><th>Status</th><th></th></tr>
+    {% for b in pending %}
+    <tr><td>{{ b.id }}</td><td>{{ b.created_at|dt }}</td><td>{{ patient_link(b.patient) }}</td>
+      <td><span class="badge blue">{{ b.category_label }}</span><br>{{ b.description }}</td>
+      <td>{{ b.created_by.display_name if b.created_by else '-' }}</td>
+      <td class="num"><b>{{ b.balance|money }}</b></td><td class="num">{{ b.patient.wallet_balance|money }}</td>
+      <td>{{ badge(b.status, b.status_label) }}</td>
+      <td><a class="btn btn-sm" href="{{ url_for('cashier.pay_bill', bill_id=b.id) }}">Collect payment</a></td></tr>
+    {% else %}<tr><td colspan="9" class="empty">No bills waiting. </td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endblock %}

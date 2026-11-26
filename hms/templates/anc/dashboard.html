@@ -1,0 +1,33 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge, patient_link %}
+{% block title %}Ante-Natal Register{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Ante-natal register</h1><p>Pregnant women currently on the ANC card. Book a new pregnancy from the patient's profile page.</p></div></div>
+{% if due_soon %}
+<div class="card"><div class="card-head"><h2>Visit due within 7 days ({{ due_soon|length }})</h2></div><div class="table-wrap"><table>
+  <tr><th>Patient</th><th>G / P</th><th>Gestational age</th><th>EDD</th><th>Next visit</th><th></th></tr>
+  {% for a in due_soon %}
+  <tr><td>{{ patient_link(a.patient) }}</td><td>G{{ a.gravida or '-' }} P{{ a.para or '-' }}</td><td>{{ a.gest_age_today or '-' }}</td>
+    <td>{{ a.edd|d }}</td><td><b class="{{ 'badge red' if a.next_visit < today }}">{{ a.next_visit|d }}</b></td>
+    <td><a class="btn btn-sm" href="{{ url_for('anc.card', anc_id=a.id) }}">Open card</a></td></tr>
+  {% endfor %}
+</table></div></div>
+{% endif %}
+<div class="card"><div class="card-head"><h2>Active pregnancies ({{ active|length }})</h2></div><div class="table-wrap"><table>
+  <tr><th>Patient</th><th>G / P</th><th>LMP</th><th>EDD</th><th>Gestational age</th><th>Consultant</th><th>Next visit</th><th>Visits</th><th></th></tr>
+  {% for a in active %}
+  <tr><td>{{ patient_link(a.patient) }}</td><td>G{{ a.gravida or '-' }} P{{ a.para or '-' }}</td>
+    <td>{{ a.lmp|d }}</td><td>{{ a.edd|d }}</td><td><b>{{ a.gest_age_today or '-' }}</b></td>
+    <td>{{ a.consultant.display_name if a.consultant else '-' }}</td><td>{{ a.next_visit|d }}</td>
+    <td>{{ a.visits|length }}</td>
+    <td><a class="btn btn-sm btn-dark" href="{{ url_for('anc.card', anc_id=a.id) }}">Open card</a></td></tr>
+  {% else %}<tr><td colspan="9" class="empty">No active ANC cards.</td></tr>{% endfor %}
+</table></div></div>
+<div class="card"><div class="card-head"><h2>Recently delivered / closed ({{ closed|length }})</h2></div><div class="table-wrap"><table>
+  <tr><th>Patient</th><th>G / P</th><th>EDD</th><th>Status</th><th>Visits</th><th></th></tr>
+  {% for a in closed %}
+  <tr><td>{{ patient_link(a.patient) }}</td><td>G{{ a.gravida or '-' }} P{{ a.para or '-' }}</td><td>{{ a.edd|d }}</td>
+    <td>{{ badge(a.status, a.status_label) }}</td><td>{{ a.visits|length }}</td>
+    <td><a class="btn btn-sm btn-outline" href="{{ url_for('anc.card', anc_id=a.id) }}">View card</a></td></tr>
+  {% else %}<tr><td colspan="6" class="empty">None yet.</td></tr>{% endfor %}
+</table></div></div>
+{% endblock %}

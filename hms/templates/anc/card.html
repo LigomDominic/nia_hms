@@ -1,0 +1,56 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge, field %}
+{% block title %}ANC card · {{ anc.patient.full_name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>ANC card · {{ anc.patient.full_name }}</h1>
+  <p><span class="mono">{{ anc.patient.hospital_id }}</span> · G{{ anc.gravida or '-' }} P{{ anc.para or '-' }} · GA <b>{{ anc.gest_age_today or '-' }}</b> · EDD <b>{{ anc.edd|d }}</b> · {{ anc.visits|length }} visit(s)</p></div>
+  {{ badge(anc.status, anc.status_label) }}</div>
+<div class="btn-row" style="margin-bottom:1.2rem">
+  <a class="btn btn-outline" href="{{ url_for('anc.edit', anc_id=anc.id) }}">Edit booking details</a>
+  <a class="btn" href="{{ url_for('anc.print_card', anc_id=anc.id) }}">Print card</a>
+  <a class="btn btn-outline" href="{{ url_for('patients.profile', hospital_id=anc.patient.hospital_id) }}">Patient profile</a>
+  {% if anc.status == 'active' %}
+  <form method="post" action="{{ url_for('anc.set_status', anc_id=anc.id) }}"><input type="hidden" name="status" value="delivered"><button class="btn btn-dark">Mark delivered</button></form>
+  <form method="post" action="{{ url_for('anc.set_status', anc_id=anc.id) }}"><input type="hidden" name="status" value="closed"><button class="btn btn-outline">Close card</button></form>
+  {% else %}
+  <form method="post" action="{{ url_for('anc.set_status', anc_id=anc.id) }}"><input type="hidden" name="status" value="active"><button class="btn btn-outline">Re-open card</button></form>
+  {% endif %}
+</div>
+<div class="card">{% include 'anc/_sheet.html' %}</div>
+{% if anc.status == 'active' %}
+<div class="card"><h3>Record a visit</h3>
+  <form method="post" action="{{ url_for('anc.add_visit', anc_id=anc.id) }}">
+    <div class="form-grid">
+      {{ field('visit_date', 'Date', now_dt.strftime('%Y-%m-%d'), type='date') }}
+      {{ field('gest_age', 'Gestational age', '', placeholder='auto from LMP') }}
+      {{ field('weight', 'Weight', '', placeholder='kg') }}
+      {{ field('urine_alb', 'Urine - albumin', '', placeholder='e.g. nil / +') }}
+      {{ field('urine_sugar', 'Urine - sugar', '', placeholder='e.g. nil / +') }}
+      {{ field('bp', 'B.P', '', placeholder='e.g. 120/80') }}
+      {{ field('sfh', 'SFH', '', placeholder='cm') }}
+      {{ field('presentation', 'Presentation / position / descent') }}
+      {{ field('fhr', 'FHR', '', placeholder='e.g. 140 bpm') }}
+      {{ field('oedema', 'Oedema', '', placeholder='e.g. nil / +') }}
+      {{ field('pcv', 'PCV', '', placeholder='%') }}
+      {{ field('next_visit', 'Next visit', '', type='date') }}
+    </div>
+    <button class="btn">Add visit to card</button>
+  </form>
+</div>
+<div class="card" id="note"><h3>Note</h3>
+  <form method="post" action="{{ url_for('anc.note', anc_id=anc.id) }}">
+    <div class="field"><textarea name="notes" data-voice rows="3" placeholder="Notes about this pregnancy - visible on the printed card">{{ anc.notes or '' }}</textarea></div>
+    <button class="btn">Save note</button>
+  </form>
+</div>
+<div class="card"><h3>Examination at 35/7 weeks</h3>
+  <form method="post" action="{{ url_for('anc.exam', anc_id=anc.id) }}">
+    <div class="form-grid">
+      {{ field('exam_head_brim', 'Head/brim relationship', anc.exam_head_brim or '') }}
+      {{ field('exam_pelvic_capacity', 'Pelvic capacity', anc.exam_pelvic_capacity or '') }}
+      {{ field('exam_date', 'Date', anc.exam_date.strftime('%Y-%m-%d') if anc.exam_date else now_dt.strftime('%Y-%m-%d'), type='date') }}
+    </div>
+    <button class="btn">Save examination</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Patient observation chart{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Patient observation chart</h1><p>{{ p.full_name }} · <span class="mono">{{ p.hospital_id }}</span></p></div>
+  <a class="btn btn-outline" href="{{ url_for('patients.profile', hospital_id=p.hospital_id) }}">Patient profile</a>
+</div>
+{% set vitals = [('temperature', 'Temperature (°C)'), ('blood_pressure', 'Blood pressure (mmHg)'), ('pulse', 'Pulse (bpm)'), ('respiration', 'Respiration (/min)'), ('weight', 'Weight (kg)'), ('spo2', 'SpO₂ (%)')] %}
+{% if can_module('nursing', 'manage') %}
+<form method="post" class="card">
+  <h3>Record an observation</h3>
+  <p>Record daily or as needed. The recording time and your name are saved automatically. Previous entries cannot be overwritten.</p>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="form-grid">
+    {% for key, label in vitals %}
+    <div><label for="{{ key }}">{{ label }}</label><input id="{{ key }}" name="{{ key }}" maxlength="30" value="{{ request.form.get(key, '') }}"></div>
+    {% endfor %}
+  </div>
+  <label for="notes">Nursing observations / care given / patient progress</label>
+  <textarea id="notes" name="notes" rows="5" maxlength="10000" required data-voice>{{ request.form.get('notes', '') }}</textarea>
+  <label for="medication">Medication (name, dose, route and time given)</label>
+  <textarea id="medication" name="medication" rows="3" maxlength="5000" data-voice>{{ request.form.get('medication', '') }}</textarea>
+  <label for="signature">Signature (typed name)</label>
+  <input id="signature" name="signature" maxlength="120" value="{{ request.form.get('signature', '') }}">
+  <button class="btn" type="submit">Save observation</button>
+</form>
+{% endif %}
+<h2>Vital trends</h2>
+<p>Latest 100 observations, oldest to newest, regardless of the history page. Hover over a point for its value and recording time. Blank, non-numeric and invalid readings are not plotted. Lines break at missing readings. Scales adjust to the recorded values; these charts do not indicate clinical normal ranges.</p>
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))">
+{% for chart in trends %}
+<section class="card">
+  <h3>{{ chart.label }}</h3>
+  {% if chart.series %}
+  <svg viewBox="0 0 500 225" role="img" aria-label="{{ chart.label }} trend over recording time" style="width:100%;height:auto">
+    <title>{{ chart.label }} trend</title>
+    {% for tick in chart.ticks %}
+    <line x1="55" y1="{{ tick.y }}" x2="465" y2="{{ tick.y }}" stroke="#d6dce0" />
+    <text x="48" y="{{ tick.y + 4 }}" text-anchor="end" font-size="12" fill="currentColor">{{ tick.label }}</text>
+    {% endfor %}
+    {% for line in chart.series %}
+      {% for segment in line.segments %}<polyline points="{{ segment }}" fill="none" stroke="{{ line.color }}" stroke-width="2" />{% endfor %}
+      {% for point in line.points %}{% if point.value is not none %}
+      <circle cx="{{ point.x }}" cy="{{ point.y }}" r="4" fill="{{ line.color }}" tabindex="0">
+        <title>{{ line.name }}: {{ point.value }} — {{ point.time|dt }}</title>
+      </circle>
+      {% endif %}{% endfor %}
+      <text x="{{ 55 + loop.index0 * 150 }}" y="215" font-size="12" fill="{{ line.color }}">{{ line.name }}</text>
+    {% endfor %}
+    <text x="55" y="183" font-size="11" fill="currentColor">{{ chart.start.strftime('%d %b %Y %H:%M') }}</text>
+    <text x="465" y="198" text-anchor="end" font-size="11" fill="currentColor">{{ chart.end.strftime('%d %b %Y %H:%M') }}</text>
+  </svg>
+  {% else %}<p>No numeric readings recorded for this vital.</p>{% endif %}
+</section>
+{% else %}<p>Record observations with vitals to see trend graphs.</p>{% endfor %}
+</div>
+<h2>Observation history</h2>
+{% for entry in entries.items %}
+<div class="card">
+  <h3>{{ entry.created_at|dt }} · {{ entry.recorded_by.full_name }}</h3>
+  <dl class="kv">{% for key, label in vitals %}{% if entry[key] %}<dt>{{ label }}</dt><dd>{{ entry[key] }}</dd>{% endif %}{% endfor %}</dl>
+  <div style="white-space:pre-wrap;overflow-wrap:anywhere">{{ entry.notes }}</div>
+  <h4>Medication</h4>
+  <div style="white-space:pre-wrap;overflow-wrap:anywhere">{{ entry.medication or 'Not recorded' }}</div>
+  <p><strong>Signature (typed name):</strong> {{ entry.signature or 'Not recorded' }}</p>
+</div>
+{% else %}<div class="card"><p>No patient observations recorded yet.</p></div>{% endfor %}
+<div class="btn-row">
+  {% if entries.has_prev %}<a class="btn btn-outline" href="{{ url_for('nurse.observations', hospital_id=p.hospital_id, page=entries.prev_num) }}">Newer entries</a>{% endif %}
+  {% if entries.has_next %}<a class="btn btn-outline" href="{{ url_for('nurse.observations', hospital_id=p.hospital_id, page=entries.next_num) }}">Older entries</a>{% endif %}
+</div>
+{% endblock %}

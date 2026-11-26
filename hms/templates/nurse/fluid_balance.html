@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Fluid balance sheet{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Fluid balance sheet</h1><p>{{ p.full_name }} · <span class="mono">{{ p.hospital_id }}</span></p></div>
+  <a class="btn btn-outline" href="{{ url_for('patients.profile', hospital_id=p.hospital_id) }}">Patient profile</a>
+</div>
+<div class="account" style="grid-template-columns:repeat(3,1fr)">
+  <div><div class="lbl">Total intake</div><div class="big">{{ '{:,}'.format(intake_total) }} ml</div></div>
+  <div><div class="lbl">Total output</div><div class="big">{{ '{:,}'.format(output_total) }} ml</div></div>
+  <div><div class="lbl">Cumulative balance</div><div class="big {{ 'neg' if cumulative < 0 else '' }}">{{ '{:+,}'.format(cumulative) }} ml</div></div>
+</div>
+{% if can_module('fluid_balance', 'manage') %}
+<form method="post" class="card">
+  <h3>Record fluid intake / output (ml)</h3>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="form-grid">
+    <div><label for="entry_at">Time *</label><input type="datetime-local" id="entry_at" name="entry_at" value="{{ request.form.get('entry_at', current_time) }}" max="{{ current_time }}" required></div>
+    <div><label for="fluid">Fluid</label><input id="fluid" name="fluid" maxlength="160" value="{{ request.form.get('fluid', '') }}" placeholder="e.g. Normal saline, D5W"></div>
+  </div>
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div>
+      <h4>Intake (ml)</h4>
+      <div class="form-grid">
+        {% for key, label in intake_fields %}
+        <div><label for="{{ key }}">{{ label }}</label><input type="number" id="{{ key }}" name="{{ key }}" min="0" max="99999" value="{{ request.form.get(key, 0) }}"></div>
+        {% endfor %}
+      </div>
+    </div>
+    <div>
+      <h4>Output (ml)</h4>
+      <div class="form-grid">
+        {% for key, label in output_fields %}
+        <div><label for="{{ key }}">{{ label }}</label><input type="number" id="{{ key }}" name="{{ key }}" min="0" max="99999" value="{{ request.form.get(key, 0) }}"></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <label for="remarks">Remarks</label>
+  <textarea id="remarks" name="remarks" rows="2" maxlength="5000" data-voice>{{ request.form.get('remarks', '') }}</textarea>
+  <button class="btn" type="submit">Save entry</button>
+</form>
+{% endif %}
+<div class="card">
+  <h3>Balance history</h3>
+  <div class="table-wrap"><table>
+    <thead>
+      <tr><th rowspan="2">Time</th><th rowspan="2">Fluid</th><th colspan="{{ intake_fields|length + 1 }}">Intake (ml)</th><th colspan="{{ output_fields|length + 1 }}">Output (ml)</th><th rowspan="2">Net</th><th rowspan="2">Remarks / by</th></tr>
+      <tr>{% for key, label in intake_fields %}<th>{{ label }}</th>{% endfor %}<th>Total</th>{% for key, label in output_fields %}<th>{{ label }}</th>{% endfor %}<th>Total</th></tr>
+    </thead>
+    <tbody>
+      {% for e in entries.items %}
+      <tr><td>{{ e.entry_at|dt }}</td><td>{{ e.fluid or '-' }}</td>
+        {% for key, label in intake_fields %}<td class="num">{{ e[key] or '' }}</td>{% endfor %}
+        <td class="num"><b>{{ e.intake_total }}</b></td>
+        {% for key, label in output_fields %}<td class="num">{{ e[key] or '' }}</td>{% endfor %}
+        <td class="num"><b>{{ e.output_total }}</b></td>
+        <td class="num {{ 'neg' if e.net < 0 else '' }}"><b>{{ '{:+}'.format(e.net) }}</b></td>
+        <td>{{ e.remarks or '-' }}<br><small class="muted">{{ e.recorded_by.full_name }}</small></td></tr>
+      {% else %}<tr><td colspan="14">No fluid balance entries recorded yet.</td></tr>{% endfor %}
+      <tr><td><b>Total</b></td><td></td>
+        {% for key, label in intake_fields %}<td class="num"><b>{{ totals[key] }}</b></td>{% endfor %}
+        <td class="num"><b>{{ intake_total }}</b></td>
+        {% for key, label in output_fields %}<td class="num"><b>{{ totals[key] }}</b></td>{% endfor %}
+        <td class="num"><b>{{ output_total }}</b></td>
+        <td class="num {{ 'neg' if cumulative < 0 else '' }}"><b>{{ '{:+}'.format(cumulative) }}</b></td><td></td></tr>
+    </tbody>
+  </table></div>
+</div>
+<div class="btn-row">
+  {% if entries.has_prev %}<a class="btn btn-outline" href="{{ url_for('fluid_balance.sheet', hospital_id=p.hospital_id, page=entries.prev_num) }}">Newer entries</a>{% endif %}
+  {% if entries.has_next %}<a class="btn btn-outline" href="{{ url_for('fluid_balance.sheet', hospital_id=p.hospital_id, page=entries.next_num) }}">Older entries</a>{% endif %}
+</div>
+{% endblock %}

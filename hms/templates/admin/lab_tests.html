@@ -1,0 +1,57 @@
+{% extends 'base.html' %}{% block title %}Lab Test Catalog{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Lab Test Catalog</h1><p class="muted">The tests your laboratory carries out. Doctors can only request active tests, and the price is billed at the cashier.</p></div>
+  <div class="btn-row">
+  {% if library_missing %}<form method="post" action="{{ url_for('admin.lab_tests_load_library') }}" onsubmit="return confirm('Add the {{ library_missing }} standard tests not yet in your catalog, with their result-entry templates? Existing tests are not changed.')">
+    <button class="btn">Load {{ library_missing }} standard tests &amp; templates</button></form>{% endif %}
+  {% if samples_left %}<form method="post" action="{{ url_for('admin.lab_tests_remove_samples') }}" onsubmit="return confirm('Remove the {{ samples_left }} sample tests that came with the app?')">
+    <button class="btn btn-outline">Remove {{ samples_left }} sample tests</button></form>{% endif %}
+  </div></div>
+
+<div class="grid grid-3">
+  <div style="grid-column: span 2">
+    <form class="card btn-row" method="get" style="align-items:flex-end">
+      <div class="field" style="flex:2;margin:0"><label for="q">Search</label><input name="q" id="q" value="{{ q }}" placeholder="Test name"></div>
+      <div class="field" style="flex:1;margin:0"><label for="category">Category</label><select name="category" id="category"><option value="">All categories</option>
+        {% for c in used_categories %}<option {{ 'selected' if category == c }}>{{ c }}</option>{% endfor %}<option value="_none" {{ 'selected' if category == '_none' }}>No category</option></select></div>
+      <button class="btn btn-dark">Filter</button>{% if q or category %}<a class="btn btn-outline" href="{{ url_for('admin.lab_tests') }}">Clear</a>{% endif %}
+    </form>
+    <div class="card"><p class="muted" style="margin-top:0">{{ tests|length }} of {{ total }} test(s)</p>
+      <table><tr><th>Test</th><th>Sample</th><th>Unit</th><th>Reference</th><th class="num">Price</th><th>Status</th><th></th></tr>
+      {% for cat, group in tests|groupby('category_label') %}
+        <tr><td colspan="7" class="test-cat" style="padding-top:.8rem">{{ cat }} ({{ group|length }})</td></tr>
+        {% for t in group %}<tr><td><b>{{ t.name }}</b>{% if t.template and result_templates.get(t.template) %}<br><small class="muted">{{ result_templates[t.template].label }} form</small>{% endif %}</td><td>{{ t.sample_type or '-' }}</td><td>{{ t.unit or '' }}</td><td>{{ t.reference_range or '' }}</td><td class="num">{{ t.price|money }}</td>
+          <td>{% if t.is_active %}<span class="badge green">Active</span>{% else %}<span class="badge">Inactive</span>{% endif %}</td>
+          <td style="white-space:nowrap"><a class="btn btn-sm btn-outline" href="{{ url_for('admin.lab_tests', edit=t.id) }}">Edit</a>
+            <form method="post" action="{{ url_for('admin.lab_test_delete', test_id=t.id) }}" style="display:inline" onsubmit="return confirm('Delete {{ t.name|e }}? If it has been requested before it will be deactivated instead.')"><button class="btn btn-sm btn-outline" style="color:var(--danger)">Delete</button></form></td></tr>{% endfor %}
+      {% else %}<tr><td colspan="7" class="empty">No tests yet. Add your hospital's tests with the form on the right, or paste a list below.</td></tr>{% endfor %}</table></div>
+  </div>
+
+  <div>
+    <form method="post" class="card"><h3>{{ 'Edit test' if edit else 'Add test' }}</h3>
+      <input type="hidden" name="test_id" value="{{ edit.id if edit else '' }}">
+      <div class="field"><label for="name">Test name *</label><input name="name" id="name" value="{{ edit.name if edit else '' }}" required></div>
+      <div class="field"><label for="cat">Category / department</label><input name="category" id="cat" list="lab-cats" value="{{ edit.category or '' if edit else '' }}" placeholder="e.g. Haematology">
+        <datalist id="lab-cats">{% for c in categories %}<option value="{{ c }}">{% endfor %}</datalist></div>
+      <div class="field"><label for="sample_type">Sample type</label><input name="sample_type" id="sample_type" list="lab-samples" value="{{ edit.sample_type or '' if edit else '' }}">
+        <datalist id="lab-samples">{% for s in ['Blood', 'Serum', 'Plasma', 'Urine', 'Stool', 'Sputum', 'Swab', 'CSF', 'Semen', 'Tissue'] %}<option value="{{ s }}">{% endfor %}</datalist></div>
+      <div class="field"><label for="unit">Unit</label><input name="unit" id="unit" value="{{ edit.unit or '' if edit else '' }}" placeholder="e.g. mg/dL"></div>
+      <div class="field"><label for="reference_range">Reference range</label><input name="reference_range" id="reference_range" value="{{ edit.reference_range or '' if edit else '' }}" placeholder="e.g. 70 - 100"></div>
+      <div class="field"><label for="price">Price *</label><input name="price" id="price" value="{{ '%.2f'|format(edit.price) if edit else '' }}" required></div>
+      <div class="field"><label for="template">Result template</label><select name="template" id="template">
+        <option value="">— None (single result box) —</option>
+        {% for key, tpl in result_templates.items() %}
+        <option value="{{ key }}" {% if edit and edit.template == key %}selected{% endif %}>{{ tpl.label }} ({{ tpl.fields|length }} field{{ 's' if tpl.fields|length != 1 }})</option>
+        {% endfor %}</select>
+        <small class="muted">Microbiology tests (category "Microbiology" or name containing MCS/culture) always use the culture &amp; sensitivity sheet.</small></div>
+      <label class="check"><input type="checkbox" name="is_active" value="1" {% if not edit or edit.is_active %}checked{% endif %}> Active (doctors can request it)</label>
+      {% if edit %}<p class="muted"><small>Requested {{ edit.times_requested }} time(s). Price changes apply to new requests only.</small></p>{% endif %}
+      <div class="btn-row" style="margin-top:.8rem"><button class="btn">Save</button>{% if edit %}<a class="btn btn-outline" href="{{ url_for('admin.lab_tests') }}">Cancel</a>{% endif %}</div></form>
+
+    <form method="post" action="{{ url_for('admin.lab_tests_bulk') }}" class="card"><h3>Add many tests at once</h3>
+      <p class="muted"><small>One test per line: <code>Name | Category | Sample | Unit | Reference range | Price | Template key (optional)</code>. You can also copy rows straight from Excel with the same column order. Tests already in the list are skipped. Template keys: {{ result_templates.keys()|join(', ') }}.</small></p>
+      <div class="field"><textarea name="lines" rows="6" placeholder="Full Blood Count | Haematology | Blood | | | 4500&#10;Serum Electrolytes | Clinical Chemistry | Serum | mmol/L | | 6000&#10;Stool Microscopy | Parasitology | Stool | | | 1500"></textarea></div>
+      <button class="btn btn-dark">Add tests</button></form>
+  </div>
+</div>
+{% endblock %}

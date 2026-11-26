@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% block title %}{{ it.name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ it.name }}</h1><p>In stock: <b>{{ it.quantity }} {{ it.unit }}</b> · {{ it.category or '' }} · {{ it.location or '' }}</p></div><a class="btn btn-outline" href="{{ url_for('store.dashboard') }}">Back</a></div>
+<div class="grid grid-2">
+  <form method="post" class="card"><h3>Receive into store</h3><input type="hidden" name="kind" value="received">
+    <div class="field"><label>Quantity</label><input name="quantity" required></div><div class="field"><label>Supplier / note</label><input name="note"></div><button class="btn">Receive</button></form>
+  <form method="post" class="card"><h3>Issue to department</h3><input type="hidden" name="kind" value="issued">
+    <div class="field"><label>Quantity</label><input name="quantity" required></div>
+    <div class="field"><label>Department</label><select name="department">{% for d in departments %}<option>{{ d }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Requested by / note</label><input name="note"></div><button class="btn btn-dark">Issue</button></form>
+</div>
+<div class="card"><h3>Bin card</h3><table><tr><th>Date</th><th>Type</th><th>Department</th><th class="num">Change</th><th class="num">Balance</th><th>Note</th><th>By</th></tr>
+  {% for m in moves %}<tr><td>{{ m.created_at|dt }}</td><td>{{ m.kind|capitalize }}</td><td>{{ m.department or '-' }}</td><td class="num">{{ '%+d'|format(m.change) }}</td><td class="num">{{ m.balance_after }}</td><td>{{ m.note or '' }}</td><td>{{ m.user.full_name if m.user else 'System' }}</td></tr>{% endfor %}</table></div>
+{% endblock %}

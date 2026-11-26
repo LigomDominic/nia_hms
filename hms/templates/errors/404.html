@@ -1,0 +1,5 @@
+{% extends 'base.html' if current_user.is_authenticated else 'errors/bare.html' %}{% block title %}Not found{% endblock %}
+{% block content %}
+<div class="card"><h1>Not found</h1><p>The record or page you requested does not exist. Check the hospital ID and try again.</p>
+<a class="btn" href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('main.landing') }}">Go back</a></div>
+{% endblock %}

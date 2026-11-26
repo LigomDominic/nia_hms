@@ -1,0 +1,173 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge %}
+{% block title %}{{ p.hospital_id }} · {{ p.full_name }}{% endblock %}
+{% block content %}
+<div class="account">
+  <div>
+    <div class="lbl">Patient account</div>
+    <div class="name">{{ p.full_name }}</div>
+    <span class="hid">{{ p.hospital_id }}</span>
+    <div style="margin-top:.5rem;color:#c9d3cc;font-size:.9rem">{{ p.gender or '' }}{% if p.age is not none %} · {{ p.age }} yrs{% endif %} · {{ p.phone or 'no phone' }}</div>
+  </div>
+  <div><div class="lbl">Status</div><div class="big" style="font-size:1.3rem">{{ p.status }}</div>
+    {% set cv = p.current_visit %}
+    <div style="color:#c9d3cc;font-size:.88rem;margin-top:.3rem">{% if cv %}Current visit: {{ cv.status_label }}{% if cv.doctor %} with {{ cv.doctor.display_name }}{% endif %}{% else %}No open visit{% endif %}</div></div>
+  <div><div class="lbl">E-Wallet balance</div><div class="big">{{ p.wallet_balance|money }}</div></div>
+  <div><div class="lbl">Outstanding bills</div><div class="big {{ 'neg' if p.outstanding_balance > 0 else '' }}">{{ p.outstanding_balance|money }}</div>
+    <div style="color:#c9d3cc;font-size:.88rem">Total paid: {{ p.total_paid|money }}</div></div>
+</div>
+
+<div class="btn-row" style="margin-bottom:1.2rem">
+  {% if current_user.role in ('admin', 'cashier') %}
+    <a class="btn" href="{{ url_for('cashier.wallet', hospital_id=p.hospital_id) }}">Fund / manage wallet</a>
+    <a class="btn btn-dark" href="{{ url_for('cashier.new_visit', hospital_id=p.hospital_id) }}">New visit → assign doctor</a>
+    <a class="btn btn-outline" href="{{ url_for('patients.edit', hospital_id=p.hospital_id) }}">Edit details</a>
+  {% endif %}
+  {% if current_user.role in ('admin', 'doctor', 'visiting_doctor') and cv and (current_user.role == 'admin' or cv.doctor_id == current_user.id) %}
+    <a class="btn btn-dark" href="{{ url_for('doctor.consult', visit_id=cv.id) }}">Open consultation</a>
+  {% endif %}
+  {% if current_user.role in ('admin', 'cashier') %}
+    <a class="btn btn-outline" href="{{ url_for('patients.card', hospital_id=p.hospital_id) }}">Print patient card</a>
+  {% endif %}
+  {% if can_module('nursing') %}
+    <a class="btn btn-dark" href="{{ url_for('nurse.observations', hospital_id=p.hospital_id) }}">Observation chart</a>
+  {% endif %}
+  {% if can_module('treatment') %}
+    <a class="btn btn-dark" href="{{ url_for('treatment.chart', hospital_id=p.hospital_id) }}">Treatment chart</a>
+  {% endif %}
+  {% if can_module('consumables') %}
+    <a class="btn btn-dark" href="{{ url_for('consumables.record', hospital_id=p.hospital_id) }}">Consumables record</a>
+  {% endif %}
+  {% if can_module('fluid_balance') %}
+    <a class="btn btn-dark" href="{{ url_for('fluid_balance.sheet', hospital_id=p.hospital_id) }}">Fluid balance</a>
+  {% endif %}
+  {% if can_module('anc') %}
+    {% if p.current_anc %}<a class="btn" href="{{ url_for('anc.card', anc_id=p.current_anc.id) }}">ANC card{% if p.current_anc.gest_age_today %} ({{ p.current_anc.gest_age_today }}){% endif %}</a>
+    {% else %}<a class="btn btn-outline" href="{{ url_for('anc.book', hospital_id=p.hospital_id) }}">Book ANC</a>{% endif %}
+  {% endif %}
+  {% if current_user.role in ('admin','cashier','lab') %}
+    <a class="btn btn-outline" href="{{ url_for('cashier.walk_in_lab', hospital_id=p.hospital_id) }}">Walk-in lab</a>
+  {% endif %}
+  {% if current_user.role in ('admin','cashier','nurse','doctor','visiting_doctor') %}
+  <form method="post" action="{{ url_for('patients.set_status', hospital_id=p.hospital_id) }}" class="btn-row">
+    <select name="status" style="width:auto">{% for s in ('Outpatient','Admitted','Discharged','Inactive') %}<option {% if s == p.status %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+    <button class="btn btn-outline btn-sm">Update status</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="grid grid-3">
+  <div class="card" style="grid-column: span 1">
+    <h3>Bio-data</h3>
+    <dl class="kv">
+      <dt>Date of birth</dt><dd>{{ p.date_of_birth|d }}</dd>
+      <dt>Email</dt><dd>{{ p.email or '-' }}</dd>
+      <dt>Address</dt><dd>{{ p.address or '-' }}</dd>
+      <dt>Blood group</dt><dd>{{ p.blood_group or '-' }}</dd>
+      <dt>Genotype</dt><dd>{{ p.genotype or '-' }}</dd>
+      <dt>Allergies</dt><dd>{% if p.allergies %}<span class="badge red">{{ p.allergies }}</span>{% else %}None recorded{% endif %}</dd>
+      <dt>Next of kin</dt><dd>{{ p.next_of_kin_name or '-' }} {{ p.next_of_kin_phone or '' }}</dd>
+      <dt>Registered</dt><dd>{{ p.created_at|dt }}{% if p.registered_by %} by {{ p.registered_by.full_name }}{% endif %}</dd>
+    </dl>
+  </div>
+  <div class="card" style="grid-column: span 2">
+    <div class="card-head"><h3>Current medication</h3></div>
+    {% set active_rx = p.prescriptions|selectattr('status', 'ne', 'cancelled')|list %}
+    {% if active_rx %}
+    <div class="table-wrap"><table>
+      <tr><th>Drug</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Qty</th><th>Date</th><th>Status</th></tr>
+      {% for rx in active_rx[:3] %}{% for i in rx.items %}
+      <tr><td><b>{{ i.drug_name }}</b></td><td>{{ i.dosage or '-' }}</td><td>{{ i.frequency or '-' }}</td><td>{{ i.duration or '-' }}</td><td>{{ i.quantity }}</td><td>{{ rx.created_at|d }}</td><td>{{ badge(rx.status, rx.status_label) }}</td></tr>
+      {% endfor %}{% endfor %}
+    </table></div>
+    {% else %}<p class="empty">No medication prescribed yet.</p>{% endif %}
+  </div>
+</div>
+
+<div class="card" data-tabs>
+  <div class="tabs">
+    <button class="active" data-tab="t-bills">Bills ({{ p.bills|length }})</button>
+    <button data-tab="t-visits">Visits ({{ p.visits|length }})</button>
+    <button data-tab="t-labs">Lab results ({{ p.lab_requests|length }})</button>
+    <button data-tab="t-rx">Prescriptions ({{ p.prescriptions|length }})</button>
+    <button data-tab="t-pay">Payments ({{ payments|length }})</button>
+    <button data-tab="t-wallet">Wallet statement ({{ p.wallet_transactions|length }})</button>
+    <button data-tab="t-emerg">Emergency drugs ({{ p.emergency_drug_uses|length }})</button>
+    <button data-tab="t-anc">Ante-natal ({{ p.anc_profiles|length }})</button>
+  </div>
+
+  <div class="tab-panel active" id="t-bills"><div class="table-wrap"><table>
+    <tr><th>#</th><th>Date</th><th>Category</th><th>Description</th><th class="num">Amount</th><th class="num">Paid</th><th class="num">Balance</th><th>Status</th><th></th></tr>
+    {% for b in p.bills %}
+    <tr><td>{{ b.id }}</td><td>{{ b.created_at|dt }}</td><td>{{ b.category_label }}</td><td>{{ b.description }}</td>
+      <td class="num">{{ b.amount|money }}</td><td class="num">{{ b.amount_paid|money }}</td><td class="num">{{ b.balance|money }}</td>
+      <td>{{ badge(b.status, b.status_label) }}</td>
+      <td class="btn-row">{% if current_user.role in ('admin','cashier') %}
+        {% if b.status in ('unpaid','part_paid') %}<a class="btn btn-sm" href="{{ url_for('cashier.pay_bill', bill_id=b.id) }}">Collect</a>{% endif %}
+        {% if b.amount_paid > 0 %}<a class="btn btn-sm btn-outline" href="{{ url_for('cashier.receipt', bill_id=b.id) }}">Receipt</a>{% endif %}
+      {% endif %}</td></tr>
+    {% else %}<tr><td colspan="9" class="empty">No bills.</td></tr>{% endfor %}
+  </table></div></div>
+
+  <div class="tab-panel" id="t-visits"><div class="table-wrap"><table>
+    <tr><th>Date</th><th>Type</th><th>Doctor</th><th>Complaint</th><th>Vitals</th><th>Diagnosis</th><th>Status</th></tr>
+    {% for v in p.visits %}
+    <tr><td>{{ v.created_at|dt }}</td><td>{{ v.visit_type }}</td><td>{{ v.doctor.display_name if v.doctor else '-' }}</td><td>{{ v.complaint or '-' }}</td>
+      <td>{% if v.has_vitals %}<small>T {{ v.temperature or '-' }} · BP {{ v.blood_pressure or '-' }} · P {{ v.pulse or '-' }} · Wt {{ v.weight or '-' }}</small>{% else %}-{% endif %}</td>
+      <td>{{ v.diagnosis or '-' }}</td><td>{{ badge(v.status, v.status_label) }}</td></tr>
+    {% else %}<tr><td colspan="7" class="empty">No visits.</td></tr>{% endfor %}
+  </table></div></div>
+
+  <div class="tab-panel" id="t-labs"><div class="table-wrap"><table>
+    <tr><th>#</th><th>Date</th><th>Tests</th><th>Doctor</th><th>Status</th><th>Delivery</th><th></th></tr>
+    {% for r in p.lab_requests %}
+    <tr><td>{{ r.id }}</td><td>{{ r.created_at|dt }}</td><td>{{ r.test_names }}</td><td>{{ r.doctor.display_name if r.doctor else '-' }}</td>
+      <td>{{ badge(r.status, r.status_label) }}</td><td>{% if r.delivery_status %}{{ badge(r.delivery_status, r.delivery_label) }}{% else %}-{% endif %}</td>
+      <td>{% if r.status == 'completed' %}<a class="btn btn-sm" href="{{ url_for('lab.print_result', req_id=r.id) }}">View result</a>{% endif %}</td></tr>
+    {% else %}<tr><td colspan="7" class="empty">No lab requests.</td></tr>{% endfor %}
+  </table></div></div>
+
+  <div class="tab-panel" id="t-rx"><div class="table-wrap"><table>
+    <tr><th>#</th><th>Date</th><th>Doctor</th><th>Items</th><th class="num">Total</th><th>Status</th></tr>
+    {% for rx in p.prescriptions %}
+    <tr><td>{{ rx.id }}</td><td>{{ rx.created_at|dt }}</td><td>{{ rx.doctor.display_name if rx.doctor else '-' }}</td>
+      <td>{% for i in rx.items %}{{ i.drug_name }} × {{ i.quantity }}{% if i.dosage %} ({{ i.dosage }} {{ i.frequency or '' }}){% endif %}<br>{% endfor %}</td>
+      <td class="num">{{ rx.total|money }}</td><td>{{ badge(rx.status, rx.status_label) }}{% if rx.dispensed_at %}<br><small>{{ rx.dispensed_at|dt }}</small>{% endif %}</td></tr>
+    {% else %}<tr><td colspan="6" class="empty">No prescriptions.</td></tr>{% endfor %}
+  </table></div></div>
+
+  <div class="tab-panel" id="t-pay"><div class="table-wrap"><table>
+    <tr><th>Date</th><th>Bill</th><th>Method</th><th>Reference</th><th class="num">Amount</th><th>Received by</th></tr>
+    {% for pay in payments %}
+    <tr><td>{{ pay.created_at|dt }}</td><td>#{{ pay.bill_id }} {{ pay.bill.description }}</td><td>{{ pay.method_label }}</td><td>{{ pay.reference or '-' }}</td>
+      <td class="num">{{ pay.amount|money }}</td><td>{{ pay.received_by.full_name if pay.received_by else '-' }}</td></tr>
+    {% else %}<tr><td colspan="6" class="empty">No payments.</td></tr>{% endfor %}
+  </table></div></div>
+
+  <div class="tab-panel" id="t-wallet"><div class="table-wrap"><table>
+    <tr><th>Date</th><th>Type</th><th>Description</th><th class="num">Amount</th><th class="num">Balance after</th><th>By</th></tr>
+    {% for t in p.wallet_transactions %}
+    <tr><td>{{ t.created_at|dt }}</td><td>{{ badge(t.kind) }}</td><td>{{ t.description }}</td>
+      <td class="num">{{ '+' if t.kind in ('deposit','refund') else '-' }}{{ t.amount|money }}</td><td class="num">{{ t.balance_after|money }}</td>
+      <td>{{ t.performed_by.full_name if t.performed_by else '-' }}</td></tr>
+    {% else %}<tr><td colspan="6" class="empty">No wallet activity.</td></tr>{% endfor %}
+  </table></div></div>
+
+  <div class="tab-panel" id="t-emerg"><div class="table-wrap"><table>
+    <tr><th>Date</th><th>Drug</th><th class="num">Qty</th><th>Dose / route</th><th>Reason</th><th>Given by</th><th>Witness</th></tr>
+    {% for u in p.emergency_drug_uses %}
+    <tr><td>{{ u.created_at|dt }}</td><td><b>{{ u.drug.label }}</b><br><small>Batch {{ u.drug.batch_no or '-' }}</small></td><td class="num">{{ u.quantity }} {{ u.drug.unit }}</td>
+      <td>{{ u.dose or '-' }}{% if u.route %} · {{ u.route }}{% endif %}</td><td>{{ u.reason }}{% if u.notes %}<br><small>{{ u.notes }}</small>{% endif %}</td>
+      <td>{{ u.administered_by.full_name }}</td><td>{{ u.witness or '-' }}</td></tr>
+    {% else %}<tr><td colspan="7" class="empty">No emergency drugs given from the nurses' office.</td></tr>{% endfor %}
+  </table></div></div>
+
+  <div class="tab-panel" id="t-anc"><div class="table-wrap"><table>
+    <tr><th>Booked</th><th>G / P</th><th>LMP</th><th>EDD</th><th>Gestational age</th><th>Visits</th><th>Status</th><th></th></tr>
+    {% for a in p.anc_profiles %}
+    <tr><td>{{ a.created_at|d }}</td><td>G{{ a.gravida or '-' }} P{{ a.para or '-' }}</td><td>{{ a.lmp|d }}</td><td>{{ a.edd|d }}</td>
+      <td>{{ a.gest_age_today or '-' }}</td><td>{{ a.visits|length }}</td><td>{{ badge(a.status, a.status_label) }}</td>
+      <td><a class="btn btn-sm" href="{{ url_for('anc.card', anc_id=a.id) }}">Open card</a></td></tr>
+    {% else %}<tr><td colspan="8" class="empty">No ante-natal record.</td></tr>{% endfor %}
+  </table></div></div>
+</div>
+{% endblock %}

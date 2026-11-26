@@ -1,0 +1,14 @@
+<!doctype html><html><body style="font-family:Arial,sans-serif;color:#333;max-width:560px;margin:0 auto">
+  <div style="background:#2b2e30;color:#fff;padding:14px 18px"><b style="font-size:1.05rem">{{ HOSPITAL_NAME }}</b><br>
+    <small>Payment receipt {{ docno('receipt', bill.id) }} · {{ bill.created_at|dt }}</small></div>
+  <div style="padding:18px;border:1px solid #ddd;border-top:0">
+    <p>Dear {{ bill.patient.full_name }},</p>
+    <p>This confirms payment received for bill #{{ bill.id }} ({{ bill.category_label }}: {{ bill.description }}).</p>
+    <table style="width:100%;border-collapse:collapse;margin:12px 0">
+      <tr style="background:#f4f4f4"><th style="text-align:left;padding:6px">Date</th><th style="text-align:left;padding:6px">Method</th><th style="text-align:left;padding:6px">Ref</th><th style="text-align:right;padding:6px">Amount</th></tr>
+      {% for p in bill.payments %}<tr><td style="padding:6px;border-bottom:1px solid #eee">{{ p.created_at|dt }}</td><td style="padding:6px;border-bottom:1px solid #eee">{{ p.method_label }}</td><td style="padding:6px;border-bottom:1px solid #eee">{{ p.reference or '-' }}</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:right">{{ p.amount|money }}</td></tr>{% endfor %}
+    </table>
+    <p><b>Total: {{ bill.amount|money }}</b> · Paid: {{ bill.amount_paid|money }} · Balance: {{ bill.balance|money }} · Status: {{ bill.status_label }}</p>
+    <p style="font-size:.85rem;color:#666">Received by {{ cashier }} · {{ HOSPITAL_NAME }}</p>
+  </div>
+</body></html>

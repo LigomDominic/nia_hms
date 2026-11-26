@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge %}
+{% block title %}Dispense {{ docno('rx', rx.id) }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Prescription {{ docno('rx', rx.id) }}</h1><p>{{ rx.patient.full_name }} · <span class="mono">{{ rx.patient.hospital_id }}</span> · by {{ rx.doctor.display_name if rx.doctor else '-' }}</p></div>{{ badge(rx.status, rx.status_label) }}</div>
+{% if rx.patient.allergies %}<div class="flash danger">Allergies: {{ rx.patient.allergies }}</div>{% endif %}
+{% if rx.notes %}<div class="flash info">Doctor's note: {{ rx.notes }}</div>{% endif %}
+<div class="card"><table>
+  <tr><th>Drug</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Qty</th><th>In stock</th><th class="num">Line total</th></tr>
+  {% for i in rx.items %}<tr><td><b>{{ i.drug_name }}</b></td><td>{{ i.dosage or '-' }}</td><td>{{ i.frequency or '-' }}</td><td>{{ i.duration or '-' }}</td><td>{{ i.quantity }}</td>
+    <td>{% if i.drug and i.drug.quantity >= i.quantity %}<span class="badge green">{{ i.drug.quantity }}</span>{% else %}<span class="badge red">{{ i.drug.quantity if i.drug else 0 }} — short</span>{% endif %}</td><td class="num">{{ i.line_total|money }}</td></tr>{% endfor %}
+  <tr><td colspan="6"><b>Total</b> — bill {{ rx.bill.status_label if rx.bill else '-' }}</td><td class="num"><b>{{ rx.total|money }}</b></td></tr>
+</table>
+{% if rx.status == 'ready_to_dispense' %}
+  <form method="post" style="margin-top:1rem"><button class="btn btn-lg">Confirm & dispense (deduct stock)</button></form>
+{% elif rx.status == 'awaiting_payment' %}<p class="flash warning" style="margin-top:1rem">Not paid yet — patient must pay at the Cashier first.</p>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}{% block title %}Record emergency drug use{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Record emergency drug use</h1><p>Stock is deducted from the nurses' office automatically and the use is saved on the patient's record.</p></div>
+  <a class="btn btn-outline" href="{{ url_for('nurse.emergency') }}">Back</a></div>
+<form method="post" class="card">
+  <fieldset><legend>Patient</legend>
+    <div class="form-grid">
+      <div class="field"><label for="hospital_id">Hospital ID *</label><input name="hospital_id" id="hospital_id" required value="{{ form.get('hospital_id', '') }}" placeholder="NIA-10/26-4821" class="mono"></div>
+      {% if patient %}<div class="field" style="grid-column: span 2"><label>Patient found</label><div><b>{{ patient.full_name }}</b> · {{ patient.gender or '' }} {% if patient.age is not none %}· {{ patient.age }} yrs{% endif %}{% if patient.allergies %} · <span class="badge red">Allergies: {{ patient.allergies }}</span>{% endif %}</div></div>{% endif %}
+    </div></fieldset>
+  <fieldset><legend>Drug given</legend>
+    <div class="form-grid">
+      <div class="field" style="grid-column: span 2"><label for="drug_id">Drug *</label><select name="drug_id" id="drug_id" required><option value="">-- Select drug --</option>
+        {% for d in drugs %}<option value="{{ d.id }}" {% if form.get('drug_id')|string == d.id|string %}selected{% endif %} {% if d.quantity <= 0 or d.is_expired %}disabled{% endif %}>{{ d.label }} · {{ d.quantity }} {{ d.unit }} left{% if d.is_expired %} (EXPIRED){% endif %}</option>{% endfor %}</select></div>
+      <div class="field"><label for="quantity">Quantity used *</label><input name="quantity" id="quantity" required value="{{ form.get('quantity', '1') }}"></div>
+      <div class="field"><label for="dose">Dose</label><input name="dose" id="dose" value="{{ form.get('dose', '') }}" placeholder="e.g. 0.5mg"></div>
+      <div class="field"><label for="route">Route</label><select name="route" id="route"><option value="">--</option>{% for r in routes %}<option {% if form.get('route') == r %}selected{% endif %}>{{ r }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="witness">Witness (optional)</label><input name="witness" id="witness" value="{{ form.get('witness', '') }}" placeholder="Name of second nurse / doctor"></div>
+      <div class="field" style="grid-column: span 2"><label for="reason">Reason / indication *</label><input name="reason" id="reason" data-voice required value="{{ form.get('reason', '') }}" placeholder="e.g. Anaphylaxis after injection"></div>
+      <div class="field" style="grid-column: span 2"><label for="notes">Notes</label><input name="notes" id="notes" data-voice value="{{ form.get('notes', '') }}" placeholder="Patient response, doctor informed, etc."></div>
+    </div></fieldset>
+  <p class="muted">Given by: <b>{{ current_user.full_name }}</b> ({{ current_user.role_label }}) · time is recorded automatically.</p>
+  <button class="btn btn-lg">Save &amp; deduct stock</button>
+</form>
+{% endblock %}

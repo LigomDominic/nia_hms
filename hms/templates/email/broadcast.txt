@@ -1,0 +1,3 @@
+{{ HOSPITAL_NAME }}
+
+{{ body }}

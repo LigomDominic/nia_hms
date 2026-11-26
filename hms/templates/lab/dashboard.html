@@ -1,0 +1,28 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge, patient_link %}
+{% block title %}Laboratory{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Laboratory queue</h1><p>Only requests paid at the Cashier (or from the e-wallet) appear here. {{ awaiting_payment }} request(s) still awaiting payment.</p></div>
+  <form method="get" action="{{ url_for('lab.walk_in') }}" class="btn-row"><input name="q" placeholder="Hospital ID e.g. NIA-10/26-4821" style="max-width:300px" required><button class="btn btn-dark">New walk-in request</button></form></div>
+<div class="card"><div class="card-head"><h2>To process ({{ queue|length }})</h2></div><div class="table-wrap"><table>
+  <tr><th>#</th><th>Posted to lab</th><th>Patient</th><th>Tests</th><th>Requested by</th><th>Status</th><th></th></tr>
+  {% for r in queue %}
+  <tr><td>{{ r.id }}</td><td>{{ r.posted_to_lab_at|dt }}</td><td>{{ patient_link(r.patient) }}</td><td>{{ r.test_names }}</td><td>{{ r.requester_label }}</td>
+    <td>{{ badge(r.status, r.status_label) }}</td><td><a class="btn btn-sm btn-dark" href="{{ url_for('lab.process', req_id=r.id) }}">Enter results</a></td></tr>
+  {% else %}<tr><td colspan="7" class="empty">No paid requests waiting.</td></tr>{% endfor %}
+</table></div></div>
+<div class="card"><div class="card-head"><h2>Awaiting manual collection ({{ to_collect|length }})</h2></div><div class="table-wrap"><table>
+  <tr><th>#</th><th>Patient</th><th>Tests</th><th>Completed</th><th>Delivery</th><th></th></tr>
+  {% for r in to_collect %}
+  <tr><td>{{ r.id }}</td><td>{{ patient_link(r.patient) }}</td><td>{{ r.test_names }}</td><td>{{ r.completed_at|dt }}</td><td>{{ badge(r.delivery_status, r.delivery_label) }}<br><small>{{ r.delivery_note }}</small></td>
+    <td class="btn-row"><a class="btn btn-sm btn-outline" href="{{ url_for('lab.print_result', req_id=r.id) }}">Print</a>
+      <form method="post" action="{{ url_for('lab.collected', req_id=r.id) }}"><button class="btn btn-sm">Mark collected</button></form>
+      {% if r.patient.email %}<form method="post" action="{{ url_for('lab.email', req_id=r.id) }}"><button class="btn btn-sm btn-outline">Email</button></form>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="6" class="empty">Nothing waiting for collection.</td></tr>{% endfor %}
+</table></div></div>
+<div class="card"><h2>Recently completed</h2><div class="table-wrap"><table>
+  <tr><th>#</th><th>Patient</th><th>Tests</th><th>Completed</th><th>Delivery</th><th></th></tr>
+  {% for r in done %}<tr><td>{{ r.id }}</td><td>{{ patient_link(r.patient) }}</td><td>{{ r.test_names }}</td><td>{{ r.completed_at|dt }}</td><td>{{ badge(r.delivery_status, r.delivery_label) }}</td>
+    <td><a class="btn btn-sm btn-outline" href="{{ url_for('lab.print_result', req_id=r.id) }}">View</a></td></tr>
+  {% else %}<tr><td colspan="6" class="empty">None yet.</td></tr>{% endfor %}
+</table></div></div>
+{% endblock %}

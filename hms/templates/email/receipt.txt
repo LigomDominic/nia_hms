@@ -1,0 +1,14 @@
+{{ HOSPITAL_NAME }} - Payment receipt {{ docno('receipt', bill.id) }}
+Date: {{ bill.created_at|dt }}
+Patient: {{ bill.patient.full_name }} ({{ bill.patient.hospital_id }})
+Bill: #{{ bill.id }} {{ bill.category_label }} - {{ bill.description }}
+
+Payments:
+{% for p in bill.payments %}  - {{ p.created_at|dt }} · {{ p.method_label }}{% if p.reference %} ({{ p.reference }}){% endif %} · {{ p.amount|money }}
+{% endfor %}
+Total: {{ bill.amount|money }}
+Paid: {{ bill.amount_paid|money }}
+Balance: {{ bill.balance|money }}
+Status: {{ bill.status_label }}
+
+Received by {{ cashier }}. Thank you for choosing {{ HOSPITAL_NAME }}.

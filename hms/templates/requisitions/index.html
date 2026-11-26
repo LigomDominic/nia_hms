@@ -1,0 +1,47 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge %}
+{% block title %}Station requisitions{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Station requisitions</h1><p>Requests from the wards and theatre to Pharmacy.</p></div>
+  <div class="btn-row">
+    {% if can_module('requisitions', 'manage') and current_user.role in ('admin', 'nurse') %}
+      <a class="btn" href="{{ url_for('requisitions.new') }}">New request</a>{% endif %}
+    {% if can_module('requisitions', 'manage') and current_user.role in ('admin', 'pharmacist') %}
+      <a class="btn btn-outline" href="{{ url_for('requisitions.tracking') }}">Issue tracking</a>{% endif %}
+  </div></div>
+
+<form class="card btn-row" method="get" style="align-items:flex-end">
+  <div class="field" style="flex:1;margin:0"><label for="station">Station</label>
+    <select name="station" id="station"><option value="">All stations</option>
+      {% for s in stations %}<option value="{{ s }}" {% if station == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select></div>
+  <button class="btn btn-dark">Filter</button>
+  {% if station %}<a class="btn btn-outline" href="{{ url_for('requisitions.index') }}">Clear</a>{% endif %}
+</form>
+
+<div class="card"><h3>Waiting for pharmacy ({{ pending|length }})</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Station</th><th>Requested by</th><th>Items</th><th>Note</th><th>Time</th><th></th></tr></thead>
+    <tbody>
+      {% for r in pending %}
+      <tr><td>{{ r.id }}</td><td><b>{{ r.station }}</b></td><td>{{ r.requested_by.full_name }}</td>
+        <td>{{ r.items|map(attribute='item_name')|join(', ') }} ({{ r.total_requested }})</td>
+        <td>{{ r.note or '-' }}</td><td>{{ r.created_at|dt }}</td>
+        <td><a class="btn btn-sm" href="{{ url_for('requisitions.detail', req_id=r.id) }}">
+          {{ 'Process' if current_user.role in ('admin', 'pharmacist') else 'View' }}</a></td></tr>
+      {% else %}<tr><td colspan="7" class="empty">No pending requests.</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+
+<div class="card"><h3>Processed</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Station</th><th>Requested by</th><th>Items</th><th>Issued</th><th>Status</th><th>By</th><th></th></tr></thead>
+    <tbody>
+      {% for r in done %}
+      <tr><td>{{ r.id }}</td><td>{{ r.station }}</td><td>{{ r.requested_by.full_name }}</td>
+        <td>{{ r.items|map(attribute='item_name')|join(', ') }}</td><td class="num">{{ r.total_issued }}</td>
+        <td>{{ badge(r.status, r.status_label) }}</td><td>{{ r.actioned_by.full_name if r.actioned_by else '-' }}</td>
+        <td><a class="btn btn-sm btn-outline" href="{{ url_for('requisitions.detail', req_id=r.id) }}">View</a></td></tr>
+      {% else %}<tr><td colspan="8" class="empty">Nothing processed yet.</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+{% endblock %}

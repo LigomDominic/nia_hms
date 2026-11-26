@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Broadcast email{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Broadcast email</h1><p>Send hospital information, announcements or reminders to patients by email.</p></div></div>
+<form method="post" class="card" style="max-width:720px">
+  <div class="field"><label>Send to</label><select name="target" id="target" onchange="tog()">
+    <option value="all">All patients with an email address ({{ patient_emails }})</option>
+    <option value="patient">One patient (hospital ID)</option>
+    <option value="address">A specific email address</option></select></div>
+  <div class="field" id="f-patient" style="display:none"><label>Hospital ID</label><input name="hospital_id" placeholder="e.g. NIA-10/26-4821"></div>
+  <div class="field" id="f-address" style="display:none"><label>Email address</label><input name="email" type="email"></div>
+  <div class="field"><label>Subject</label><input name="subject" required placeholder="e.g. Clinic closed on public holiday"></div>
+  <div class="field"><label>Message</label><textarea name="body" rows="8" required placeholder="Dear patient,&#10;&#10;This is to inform you that..."></textarea></div>
+  <div class="btn-row"><button class="btn btn-lg">Send email</button>
+    <a class="btn btn-outline" href="{{ url_for('admin.dashboard') }}">Cancel</a></div>
+</form>
+{% endblock %}
+{% block scripts %}<script>
+function tog() {
+  var v = document.getElementById('target').value;
+  document.getElementById('f-patient').style.display = v === 'patient' ? '' : 'none';
+  document.getElementById('f-address').style.display = v === 'address' ? '' : 'none';
+}
+</script>{% endblock %}

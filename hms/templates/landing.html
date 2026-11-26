@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ HOSPITAL_NAME }} · Hospital Management System</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% include '_theme.html' %}
+</head>
+<body class="landing">
+<header class="lnav">
+  <div class="brand"><img class="logo-img" src="{{ url_for('static', filename='img/logo.svg') }}" alt="{{ HOSPITAL_NAME }}"><span>{{ HOSPITAL_NAME }}</span></div>
+  <nav>
+    <a href="#features">Features</a>
+    <a href="#workflow">Patient Journey</a>
+    <a href="#wallet">E-Wallet</a>
+    {% if current_user.is_authenticated %}
+      <a class="btn" href="{{ url_for('main.dashboard') }}">Go to Dashboard</a>
+    {% else %}
+      <a class="btn" href="{{ url_for('auth.login') }}">Staff Login</a>
+    {% endif %}
+  </nav>
+</header>
+
+<section class="hero">
+  <div>
+    <h1>Care that flows.<br><span>Billing that never leaks.</span></h1>
+    <p>{{ HOSPITAL_NAME }} runs every patient through one connected system — front-desk registration, doctor consultation,
+      laboratory, pharmacy and stores — with payment confirmed at the cashier before any service is rendered.</p>
+    <div class="btn-row">
+      <a class="btn btn-lg" href="{{ url_for('auth.login') }}">Staff Login</a>
+      <a class="btn btn-lg btn-outline" href="#workflow" style="background:transparent;color:#fff;border-color:#6b7377">See how it works</a>
+    </div>
+  </div>
+  <div class="hero-card">
+    <div class="muted" style="color:#b5c0b9;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em">Patient account lookup</div>
+    <div style="font-size:1.3rem;font-weight:700;margin:.3rem 0 .8rem">NIA-10/26-4821 · Jane Doe</div>
+    <div class="row"><span>Status</span><span class="v">Outpatient</span></div>
+    <div class="row"><span>E-Wallet balance</span><span class="v">₦45,000.00</span></div>
+    <div class="row"><span>Outstanding bills</span><span class="v">₦0.00</span></div>
+    <div class="row"><span>Last lab result</span><span class="v">Ready · Emailed</span></div>
+    <div class="row"><span>Prescription</span><span class="v">Dispensed</span></div>
+  </div>
+</section>
+
+<section class="lsection" id="features">
+  <h2>Everything a hospital needs, in one place</h2>
+  <p class="sub">Role-based access for Admin, Cashiers, Doctors, Visiting Doctors, Nurses, Lab Scientists, Pharmacists, Store Keepers and Cleaners.</p>
+  <div class="grid grid-3">
+    <div class="feature"><div class="ico">ID</div><h3>Unique Patient IDs</h3><p>Every patient gets a permanent hospital ID at registration — the key to their entire record.</p></div>
+    <div class="feature"><div class="ico">⌕</div><h3>Instant Lookup</h3><p>Enter a hospital ID and see status, wallet balance, bills, visits, lab results and medication — like a bank account.</p></div>
+    <div class="feature"><div class="ico">₦</div><h3>Pay-before-service</h3><p>Lab tests and drugs are billed to the cashier first; once paid they are posted to the Lab or Pharmacy automatically.</p></div>
+    <div class="feature"><div class="ico">⚗</div><h3>Laboratory</h3><p>Paid requests arrive in the lab queue. Results are posted to the doctor and emailed to the patient or kept for collection.</p></div>
+    <div class="feature"><div class="ico">℞</div><h3>Pharmacy Inventory</h3><p>Dispense only paid prescriptions, with automatic stock deduction, reorder alerts, batches and expiry tracking.</p></div>
+    <div class="feature"><div class="ico">▦</div><h3>Store Management</h3><p>Track consumables, linen and cleaning supplies — receive stock and issue items to departments with full history.</p></div>
+  </div>
+</section>
+
+<section class="lsection alt" id="workflow">
+  <h2>The patient journey</h2>
+  <p class="sub">Every step is tracked, and nothing moves forward until it's paid for.</p>
+  <div class="steps">
+    <div class="step"><h3>Cashier registers</h3><p>Patient data captured, card fee collected, unique ID issued and a doctor assigned.</p></div>
+    <div class="step"><h3>Doctor consults</h3><p>Face-to-face consultation; nurse vitals on screen; tests and drugs requested.</p></div>
+    <div class="step"><h3>Cashier collects</h3><p>Test and drug bills come to the cashier — or are paid instantly from the e-wallet.</p></div>
+    <div class="step"><h3>Lab & Pharmacy</h3><p>Paid tests go to the lab; paid prescriptions go to the pharmacy for dispensing.</p></div>
+    <div class="step"><h3>Results delivered</h3><p>Results post back to the doctor and to the patient by email or manual collection.</p></div>
+  </div>
+</section>
+
+<section class="lsection" id="wallet">
+  <div class="grid grid-2" style="align-items:center">
+    <div>
+      <h2 style="text-align:left">Patient E-Wallet</h2>
+      <p class="muted" style="font-size:1.05rem">Saving towards surgery or ongoing treatment? Patients can fund their wallet in advance — in any amount, at any time.
+        Whenever a new service is billed (drugs, tests, consultation), the system automatically deducts it from the wallet.
+        If the wallet only covers part, the rest goes to the cashier.</p>
+    </div>
+    <div class="feature">
+      <div class="flow"><b>Deposit ₦50,000</b> → <b>Lab test ₦4,500</b> auto-charged → <b>Drugs ₦3,200</b> auto-charged → <b>Balance ₦42,300</b></div>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <h2>Ready to start your shift?</h2>
+  <p style="color:#c9d3cc">Log in with the account given to you by the hospital administrator.</p>
+  <a class="btn btn-lg" href="{{ url_for('auth.login') }}">Staff Login</a>
+</section>
+<footer class="footer">© {{ HOSPITAL_NAME }} · Hospital Management System</footer>
+</body>
+</html>

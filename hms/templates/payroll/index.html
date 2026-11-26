@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Staff payroll{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Staff payroll &amp; IOUs</h1><p>Set monthly salaries, pay staff, and track advances (IOUs) deducted from pay.</p></div></div>
+
+<div class="card"><h3>Staff ({{ staff|length }})</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Staff</th><th>Role</th><th>Monthly salary</th><th class="num">IOU outstanding</th><th>This month</th><th></th></tr></thead>
+    <tbody>
+      {% for u in staff %}
+      <tr>
+        <td><b>{{ u.display_name }}</b><br><small class="muted">{{ u.username }}</small></td>
+        <td>{{ u.role_label }}</td>
+        <td>
+          {% if can_module('payroll', 'manage') %}
+          <form method="post" action="{{ url_for('payroll.set_salary', user_id=u.id) }}" class="btn-row" style="margin:0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="next" value="{{ url_for('payroll.index') }}">
+            <input name="monthly_salary" inputmode="decimal" style="width:130px" placeholder="Not set"
+                   value="{{ '%.2f'|format(u.monthly_salary) if u.monthly_salary else '' }}">
+            <button class="btn btn-sm btn-outline">Save</button>
+          </form>
+          {% else %}{{ u.monthly_salary|money if u.monthly_salary else '—' }}{% endif %}
+        </td>
+        <td class="num">{% if iou_totals[u.id] %}<b style="color:var(--danger)">{{ iou_totals[u.id]|money }}</b>{% else %}—{% endif %}</td>
+        <td>{% if paid.get(u.id) %}<span class="badge ok">Paid {{ paid[u.id].net|money }}</span>{% else %}<span class="muted">Not paid</span>{% endif %}</td>
+        <td><a class="btn btn-sm" href="{{ url_for('payroll.detail', user_id=u.id) }}">Manage</a></td>
+      </tr>
+      {% endfor %}
+    </tbody></table></div>
+  <p class="muted" style="margin-top:.6rem">Month shown: <b>{{ period }}</b>. IOUs are issued from the staff member's page and can be repaid in cash or deducted from a salary payment.</p>
+</div>
+{% endblock %}

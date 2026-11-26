@@ -1,0 +1,10 @@
+{{ HOSPITAL_NAME }} - Financial report {{ start|d }} - {{ end|d }}
+
+Total collected: {{ total|money }} ({{ count }} payments)
+
+By service:
+{% for k, v in by_category.items() %}  - {{ k }}: {{ v|money }}
+{% endfor %}
+By method:
+{% for k, v in by_method.items() %}  - {{ k }}: {{ v|money }}
+{% endfor %}

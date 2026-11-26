@@ -1,0 +1,25 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge %}
+{% block title %}Assign doctor{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'Change' if v.doctor else 'Assign' }} doctor</h1>
+  <p>{{ v.patient.full_name }} · <span class="mono">{{ v.patient.hospital_id }}</span> · {{ v.visit_type }} visit · {{ badge(v.status, v.status_label) }}</p></div>
+  <a class="btn btn-outline" href="{{ url_for('nurse.dashboard') }}">Back to queue</a></div>
+<div class="grid grid-2">
+<form method="post" class="card">
+  <p>Complaint: <b>{{ v.complaint or '-' }}</b><br>Currently with: <b>{{ v.doctor.display_name if v.doctor else 'Not assigned' }}</b></p>
+  <div class="field"><label for="doctor_id">Doctor *</label>
+    <select name="doctor_id" id="doctor_id" required><option value="">-- Select doctor --</option>
+      {% for d in doctors %}<option value="{{ d.id }}" {% if v.doctor_id == d.id %}selected{% endif %}>{{ d.display_name }}{% if d.specialty %} — {{ d.specialty }}{% endif %}{% if d.role == 'visiting_doctor' and 'Visiting' not in (d.specialty or '') %} (Visiting){% endif %}</option>{% endfor %}
+    </select></div>
+  <div class="field"><label for="note">Note / reason (optional)</label><input name="note" id="note" placeholder="e.g. Needs cardiology review"></div>
+  <button class="btn btn-lg">Save assignment</button>
+</form>
+<div class="card"><h3>Assignment history</h3><div class="table-wrap"><table>
+  <tr><th>When</th><th>From</th><th>To</th><th>By</th><th>Note</th></tr>
+  {% for a in v.assignments %}
+  <tr><td>{{ a.created_at|dt }}</td><td>{{ a.from_doctor.display_name if a.from_doctor else '-' }}</td><td><b>{{ a.to_doctor.display_name }}</b></td>
+    <td>{{ a.assigned_by.full_name if a.assigned_by else '-' }}<br><small>{{ a.assigned_by.role_label if a.assigned_by else '' }}</small></td><td>{{ a.note or '' }}</td></tr>
+  {% else %}<tr><td colspan="5" class="empty">No doctor assigned yet.</td></tr>{% endfor %}
+</table></div></div>
+</div>
+{% endblock %}

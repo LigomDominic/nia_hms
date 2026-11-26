@@ -1,0 +1,124 @@
+{% extends 'base.html' %}{% block title %}App Settings{% endblock %}
+{% macro select(name, options, current) -%}
+<select name="{{ name }}" id="{{ name }}">{% for k, v in options.items() %}<option value="{{ k }}" {{ 'selected' if k == current }}>{{ v[0] if v is not string and v is sequence else (v.label if v is mapping else v) }}</option>{% endfor %}</select>
+{%- endmacro %}
+{% macro flag(name, label) -%}
+<input type="hidden" name="flags_section" value="{{ name }}">
+<label style="display:flex;gap:.5rem;align-items:center;font-weight:500"><input type="checkbox" name="{{ name }}" value="1" {{ 'checked' if S[name] == '1' }} style="width:auto"> {{ label }}</label>
+{%- endmacro %}
+{% block content %}
+<div class="page-head"><div><h1>App Settings</h1><p class="muted">Changes apply to everyone as soon as you save.</p></div></div>
+<div data-tabs>
+  <div class="tabs">
+    {% for key, label in [('general','Hospital'), ('theme','Theme'), ('currency','Currency & fees'), ('documents','Documents'), ('printing','Printer'), ('regional','Date & time'), ('voice','Voice typing')] %}
+    <button type="button" data-tab="t-{{ key }}" class="{{ 'active' if tab == key }}">{{ label }}</button>{% endfor %}
+  </div>
+
+  <div class="tab-panel {{ 'active' if tab == 'general' }}" id="t-general">
+    <form method="post" class="card" style="max-width:760px"><input type="hidden" name="tab" value="general">
+      <h3>Hospital details</h3><p class="muted">Shown on the landing page, menus and printed documents.</p>
+      <div class="grid grid-2">
+        <div class="field"><label for="hospital_name">Hospital name *</label><input name="hospital_name" id="hospital_name" required value="{{ S.hospital_name }}"></div>
+        <div class="field"><label for="hospital_tagline">Tagline</label><input name="hospital_tagline" id="hospital_tagline" value="{{ S.hospital_tagline }}"></div>
+        <div class="field" style="grid-column:span 2"><label for="hospital_address">Address</label><input name="hospital_address" id="hospital_address" value="{{ S.hospital_address }}" placeholder="e.g. 12 Hospital Road, Abuja"></div>
+        <div class="field"><label for="hospital_phone">Phone</label><input name="hospital_phone" id="hospital_phone" value="{{ S.hospital_phone }}"></div>
+        <div class="field"><label for="hospital_email">Email</label><input name="hospital_email" id="hospital_email" type="email" value="{{ S.hospital_email }}"></div>
+        <div class="field"><label for="patient_id_prefix">Patient ID prefix</label><input name="patient_id_prefix" id="patient_id_prefix" value="{{ S.patient_id_prefix }}" maxlength="8"></div>
+        <div class="field"><label for="patient_id_format">Hospital number format</label>
+          <select name="patient_id_format" id="patient_id_format">{% for k, label in id_formats.items() %}<option value="{{ k }}" {{ 'selected' if S.patient_id_format == k }}>{{ label.format(p=S.patient_id_prefix) }}</option>{% endfor %}</select>
+          <small class="muted">Applies to new patients only. Existing hospital numbers never change.</small></div>
+      </div>
+      <button class="btn">Save hospital details</button>
+    </form>
+  </div>
+
+  <div class="tab-panel {{ 'active' if tab == 'theme' }}" id="t-theme">
+    <form method="post" class="card"><input type="hidden" name="tab" value="theme">
+      <h3>Colour theme</h3>
+      <div class="swatches">{% for key, t in aps.THEMES.items() %}
+        <label class="swatch {{ 'selected' if S.theme == key }}"><input type="radio" name="theme" value="{{ key }}" {{ 'checked' if S.theme == key }}>{{ t.label }}
+          <div class="chips"><span style="background:{{ t.ink }}"></span><span style="background:{{ t['ink-3'] }}"></span><span style="background:{{ t.green }}"></span><span style="background:{{ t['green-2'] }}"></span><span style="background:{{ t['green-dark'] }}"></span></div></label>{% endfor %}
+      </div>
+      <div style="margin-top:1rem"><button class="btn">Apply theme</button></div>
+    </form>
+  </div>
+
+  <div class="tab-panel {{ 'active' if tab == 'currency' }}" id="t-currency">
+    <form method="post" class="card" style="max-width:760px"><input type="hidden" name="tab" value="currency">
+      <h3>Currency</h3>
+      <div class="grid grid-2">
+        <div class="field"><label for="currency_symbol">Symbol *</label><input name="currency_symbol" id="currency_symbol" required maxlength="5" value="{{ S.currency_symbol }}"></div>
+        <div class="field"><label for="currency_code">Code</label><input name="currency_code" id="currency_code" maxlength="5" value="{{ S.currency_code }}" placeholder="NGN"></div>
+        <div class="field"><label for="currency_position">Symbol position</label>{{ select('currency_position', aps.CURRENCY_POSITIONS, S.currency_position) }}</div>
+        <div class="field"><label for="currency_decimals">Decimals</label>{{ select('currency_decimals', aps.DECIMALS, S.currency_decimals) }}</div>
+      </div>
+      <p class="muted">Preview: <b>{{ 12500.5|money }}</b> (after saving)</p>
+      <h3 style="margin-top:1rem">Fees</h3>
+      <div class="grid grid-2">
+        <div class="field"><label for="card_fee">Hospital card / registration fee</label><input name="card_fee" id="card_fee" value="{{ '%.2f'|format(card_fee) }}"></div>
+        <div class="field"><label for="consultation_fee">Default consultation fee (optional per visit)</label><input name="consultation_fee" id="consultation_fee" value="{{ '%.2f'|format(consultation_fee) }}"></div>
+        <div class="field"><label for="anc_fee">Ante-natal (ANC) booking fee</label><input name="anc_fee" id="anc_fee" value="{{ '%.2f'|format(anc_fee) }}"></div>
+        <div class="field"><label for="file_retrieval_fee">File retrieval fee (patient inactive &gt; 30 days)</label><input name="file_retrieval_fee" id="file_retrieval_fee" value="{{ '%.2f'|format(file_retrieval_fee) }}"></div>
+      </div>
+      <button class="btn">Save currency & fees</button>
+    </form>
+  </div>
+
+  <div class="tab-panel {{ 'active' if tab == 'documents' }}" id="t-documents">
+    <form method="post" class="card" style="max-width:760px"><input type="hidden" name="tab" value="documents">
+      <h3>Document types & numbering</h3>
+      <table><tr><th>Document type</th><th>Number prefix</th><th>Example</th></tr>
+        {% for kind, (label, _d) in aps.DOCUMENT_TYPES.items() %}<tr><td>{{ label }}</td>
+          <td><input name="doc_prefix_{{ kind }}" value="{{ S['doc_prefix_' ~ kind] }}" maxlength="12" style="max-width:140px"></td>
+          <td class="mono">{{ docno(kind, 42) }}</td></tr>{% endfor %}</table>
+      <div class="grid grid-2" style="margin-top:1rem">
+        <div class="field"><label for="doc_number_digits">Number of digits</label><input name="doc_number_digits" id="doc_number_digits" type="number" min="1" max="10" value="{{ S.doc_number_digits }}"></div>
+        <div class="field" style="grid-column:span 2"><label for="document_footer">Footer note on printed documents</label><input name="document_footer" id="document_footer" value="{{ S.document_footer }}"></div>
+      </div>
+      {{ flag('print_show_address', 'Show hospital address, phone and email on printed documents') }}
+      {{ flag('receipt_show_wallet', "Show the patient's wallet balance on receipts") }}
+      <div style="margin-top:1rem"><button class="btn">Save document settings</button></div>
+    </form>
+  </div>
+
+  <div class="tab-panel {{ 'active' if tab == 'printing' }}" id="t-printing">
+    <form method="post" class="card" style="max-width:760px"><input type="hidden" name="tab" value="printing">
+      <h3>Printer settings</h3>
+      <div class="grid grid-2">
+        <div class="field"><label for="receipt_paper">Receipt paper</label>{{ select('receipt_paper', aps.PAPER_SIZES, S.receipt_paper) }}<small class="muted">Choose 80 mm / 58 mm for POS thermal printers.</small></div>
+        <div class="field"><label for="report_paper">Reports, lab results & cards paper</label>{{ select('report_paper', aps.REPORT_PAPER_SIZES, S.report_paper) }}<small class="muted">Normal sheet paper only - thermal sizes are for receipts.</small></div>
+        <div class="field"><label for="report_orientation">Orientation</label>{{ select('report_orientation', aps.ORIENTATIONS, S.report_orientation) }}</div>
+        <div class="field"><label for="print_margin_mm">Page margin (mm)</label><input name="print_margin_mm" id="print_margin_mm" type="number" min="0" max="40" value="{{ S.print_margin_mm }}"></div>
+      </div>
+      {{ flag('auto_print_receipt', 'Open the print dialog automatically when a receipt is shown after payment') }}
+      <p class="muted" style="margin-top:.8rem">The printer itself is chosen in the browser's print window. To skip that window on the cashier PC, start Chrome with <code>--kiosk-printing</code> and set the receipt printer as the default printer.</p>
+      <button class="btn">Save printer settings</button>
+    </form>
+  </div>
+
+  <div class="tab-panel {{ 'active' if tab == 'regional' }}" id="t-regional">
+    <form method="post" class="card" style="max-width:760px"><input type="hidden" name="tab" value="regional">
+      <h3>Date & time format</h3>
+      <div class="grid grid-2">
+        <div class="field"><label for="date_format">Date format</label>{{ select('date_format', aps.DATE_FORMATS, S.date_format) }}</div>
+        <div class="field"><label for="time_format">Time format</label>{{ select('time_format', aps.TIME_FORMATS, S.time_format) }}</div>
+      </div>
+      <button class="btn">Save date & time</button>
+    </form>
+  </div>
+
+  <div class="tab-panel {{ 'active' if tab == 'voice' }}" id="t-voice">
+    <form method="post" class="card" style="max-width:760px"><input type="hidden" name="tab" value="voice">
+      <h3>Voice typing (speech to text)</h3>
+      <p class="muted">Adds a microphone button to the complaint, notes and diagnosis boxes, so doctors and nurses can dictate instead of typing. It works in Google Chrome and Microsoft Edge with an internet connection, and the browser sends the audio to its speech service to convert it. Open the app on <code>http://127.0.0.1:5000</code> or over https, otherwise the browser blocks the microphone.</p>
+      {{ flag('voice_enabled', 'Enable voice typing') }}
+      {{ flag('voice_punctuation', 'Spoken punctuation ("full stop", "comma", "question mark", "new line")') }}
+      <div class="field" style="margin-top:.8rem;max-width:320px"><label for="voice_language">Language / accent</label>{{ select('voice_language', aps.VOICE_LANGUAGES, S.voice_language) }}</div>
+      <div class="field"><label for="voice_test">Try it here (not saved)</label><textarea id="voice_test" rows="3" data-voice placeholder="Click the mic and say: patient complains of fever for three days full stop"></textarea></div>
+      <button class="btn">Save voice settings</button>
+    </form>
+  </div>
+</div>
+<div class="card" style="max-width:820px"><h3>Email for lab results</h3>
+  <p class="muted">Set these environment variables before starting the app: <code>MAIL_SERVER</code>, <code>MAIL_PORT</code>, <code>MAIL_USERNAME</code>, <code>MAIL_PASSWORD</code>, <code>MAIL_SENDER</code>. Without them, emailed results fall back to manual collection.</p></div>
+{% endblock %}

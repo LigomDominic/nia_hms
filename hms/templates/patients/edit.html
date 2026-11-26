@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% from '_macros.html' import select %}
+{% block title %}Edit {{ p.hospital_id }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Edit patient</h1><p class="mono">{{ p.hospital_id }} · {{ p.full_name }}</p></div></div>
+<form method="post" class="card">
+  {% include 'patients/_fields.html' %}
+  <div class="form-grid">{{ select('status', 'Patient status', statuses, p.status, blank=None) }}</div>
+  <div class="btn-row"><button class="btn">Save changes</button><a class="btn btn-outline" href="{{ url_for('patients.profile', hospital_id=p.hospital_id) }}">Cancel</a></div>
+</form>
+{% endblock %}

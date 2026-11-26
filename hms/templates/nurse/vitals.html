@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% from '_macros.html' import field %}
+{% block title %}Vitals{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Record vitals</h1><p>{{ v.patient.full_name }} · <span class="mono">{{ v.patient.hospital_id }}</span> · for {{ v.doctor.display_name if v.doctor else '-' }}</p></div></div>
+<form method="post" class="card" style="max-width:780px">
+  <div class="form-grid">
+    {{ field('temperature', 'Temperature (°C)', v.temperature) }}
+    {{ field('blood_pressure', 'Blood pressure (mmHg)', v.blood_pressure, placeholder='120/80') }}
+    {{ field('pulse', 'Pulse (bpm)', v.pulse) }}
+    {{ field('respiration', 'Respiration (/min)', v.respiration) }}
+    {{ field('weight', 'Weight (kg)', v.weight) }}
+    {{ field('spo2', 'SpO₂ (%)', v.spo2) }}
+  </div>
+  {% if v.patient.allergies %}<p><span class="badge red">Allergies: {{ v.patient.allergies }}</span></p>{% endif %}
+  <button class="btn btn-lg">Save vitals</button>
+</form>
+{% endblock %}

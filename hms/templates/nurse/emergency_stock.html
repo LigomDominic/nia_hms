@@ -1,0 +1,25 @@
+{% extends 'base.html' %}{% from '_macros.html' import patient_link %}
+{% block title %}Stock · {{ drug.label }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ drug.label }}</h1><p>Nurses' office · In stock: <b>{{ drug.quantity }} {{ drug.unit }}</b> · Reorder at {{ drug.reorder_level }} · Batch {{ drug.batch_no or '-' }} · Expiry {{ drug.expiry_date|d }}
+  {% if drug.is_expired %}<span class="badge red">Expired</span>{% elif drug.is_low %}<span class="badge red">Low stock</span>{% endif %}</p></div>
+  <div class="btn-row"><a class="btn btn-outline" href="{{ url_for('nurse.emergency_drug_form', drug_id=drug.id) }}">Edit</a><a class="btn btn-outline" href="{{ url_for('nurse.emergency') }}">Back</a></div></div>
+<div class="grid grid-2">
+  <form method="post" class="card"><h3>Receive stock</h3><input type="hidden" name="action" value="receive">
+    <div class="form-grid"><div class="field"><label>Quantity *</label><input name="quantity" required></div><div class="field"><label>New batch no.</label><input name="batch_no"></div>
+      <div class="field"><label>New expiry</label><input type="date" name="expiry_date"></div><div class="field"><label>Source / note</label><input name="note" placeholder="e.g. From pharmacy, requisition #12"></div></div>
+    <button class="btn">Add to office stock</button></form>
+  <form method="post" class="card"><h3>Remove stock</h3><input type="hidden" name="action" value="remove">
+    <div class="form-grid"><div class="field"><label>Quantity *</label><input name="quantity" required></div>
+      <div class="field"><label>Type</label><select name="kind">{% for k, v in remove_kinds.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+      <div class="field" style="grid-column: span 2"><label>Reason *</label><input name="note" required placeholder="e.g. Expired batch returned to pharmacy"></div></div>
+    <button class="btn btn-danger">Remove stock</button></form>
+</div>
+<div class="card"><h3>Stock card (every movement)</h3><div class="table-wrap"><table>
+  <tr><th>Date</th><th>Type</th><th class="num">Change</th><th class="num">Balance</th><th>Patient / note</th><th>By</th></tr>
+  {% for m in drug.movements %}
+  <tr><td>{{ m.created_at|dt }}</td><td>{{ m.kind_label }}</td><td class="num">{{ '%+d'|format(m.change) }}</td><td class="num">{{ m.balance_after }}</td>
+    <td>{% if m.use %}{{ patient_link(m.use.patient) }}<br><small>{{ m.use.reason }}</small>{% else %}{{ m.note or '' }}{% endif %}</td><td>{{ m.user.full_name if m.user else 'System' }}</td></tr>
+  {% else %}<tr><td colspan="6" class="empty">No movements.</td></tr>{% endfor %}
+</table></div></div>
+{% endblock %}
