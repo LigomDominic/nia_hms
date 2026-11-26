@@ -1,0 +1,15 @@
+{% extends 'base.html' %}{% block title %}Payments{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Payment history</h1><p>{% if start or end %}{{ start|d if start else 'Beginning' }} - {{ end|d if end else 'to date' }} · {{ payments|length }} payments · {{ total|money }}{% else %}Latest {{ payments|length }} payments.{% endif %}</p></div>
+  <div class="btn-row"><form class="btn-row"><input type="date" name="start" value="{{ start.isoformat() if start else '' }}"><input type="date" name="end" value="{{ end.isoformat() if end else '' }}"><button class="btn btn-outline">Apply</button></form>
+  <a class="btn" href="{{ url_for('cashier.payments', start=request.args.get('start', ''), end=request.args.get('end', ''), print=1) }}">Print report</a></div></div>
+<div class="grid grid-4" style="margin-bottom:1.2rem">{% for k, v in by_method.items() %}<div class="stat"><div class="label">{{ k }}</div><div class="value">{{ v|money }}</div></div>{% endfor %}</div>
+<div class="card"><div class="table-wrap"><table>
+  <tr><th>Date</th><th>Patient</th><th>Bill</th><th>Method</th><th>Reference</th><th>Cashier</th><th class="num">Amount</th><th></th></tr>
+  {% for pay in payments %}
+  <tr><td>{{ pay.created_at|dt }}</td><td><a href="{{ url_for('patients.profile', hospital_id=pay.patient.hospital_id) }}">{{ pay.patient.full_name }}</a><br><small class="mono">{{ pay.patient.hospital_id }}</small></td>
+    <td>#{{ pay.bill_id }} {{ pay.bill.category_label }}</td><td>{{ pay.method_label }}</td><td>{{ pay.reference or '-' }}</td><td>{{ pay.received_by.full_name if pay.received_by else '-' }}</td>
+    <td class="num">{{ pay.amount|money }}</td><td><a class="btn btn-sm btn-outline" href="{{ url_for('cashier.receipt', bill_id=pay.bill_id) }}">Receipt</a></td></tr>
+  {% else %}<tr><td colspan="8" class="empty">No payments yet.</td></tr>{% endfor %}
+</table></div></div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Choose app{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Which app do you want to use?</h1><p>Your choice applies to everything you do until you switch or log out.</p></div></div>
+<div class="grid grid-2">
+  <form method="post" class="card" style="display:flex;flex-direction:column">
+    <input type="hidden" name="next" value="{{ nxt }}">
+    <h3 style="margin-top:0">Original app</h3>
+    <p class="muted">The live hospital system. Every entry here is a real hospital record.</p>
+    <button class="btn btn-lg" name="env" value="live" style="margin-top:auto">Use live app</button>
+  </form>
+  {% if demo_available %}
+  <form method="post" class="card" style="display:flex;flex-direction:column;border-color:var(--warning, #d8a200)">
+    <input type="hidden" name="next" value="{{ nxt }}">
+    <h3 style="margin-top:0">Training / demo</h3>
+    <p class="muted">A practice copy of the system for staff training. Entries do <b>not</b> affect live records.</p>
+    <button class="btn btn-lg btn-dark" name="env" value="demo" style="margin-top:auto">Use training app</button>
+  </form>
+  {% endif %}
+</div>
+{% if demo_available and current_user.role == 'admin' %}
+<form method="post" action="{{ url_for('admin.reset_demo') }}" class="card" style="margin-top:1rem"
+      onsubmit="return confirm('Replace the training database with a fresh copy of the live data? All training entries will be lost.')">
+  <b>Admin:</b> Reset the training data so it matches the live system again.
+  <button class="btn btn-outline">Reset training data</button>
+</form>
+{% endif %}
+{% endblock %}

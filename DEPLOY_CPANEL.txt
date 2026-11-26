@@ -1,0 +1,60 @@
+NIA HOSPITAL HMS — deployment checklist (DirectAdmin / CloudLinux Python App)
+===========================================================================
+
+Panel:  https://rogue.hkdns.host:2222/evo/
+Site:   https://app.niahospitals.com
+App root (File Manager):  domains/app.niahospitals.com/public_html
+Package to upload:        nia_hms_deploy.zip
+
+1. Upload nia_hms_deploy.zip into domains/app.niahospitals.com/public_html
+   via File Manager, then Extract it there.
+   After extracting, passenger_wsgi.py must sit at the TOP level,
+   next to config.py, requirements.txt and the hms/ folder — NOT inside a
+   nested nia_hms/ folder. (The zip is already packed flat.)
+
+   !!! DATABASE WARNING !!!
+   instance/hms.db inside the zip is the CLEANED production database
+   (admin account only, hospital settings, 138-test lab catalog).
+   If app.niahospitals.com already has a live database with real data,
+   do NOT overwrite it — either delete instance/hms.db on the server
+   before extracting, or extract the zip and restore the existing DB file.
+   Never upload instance/hms_demo.db — the training DB builds itself.
+
+2. DirectAdmin > "Setup Python App" (CloudLinux Python selector):
+   - Python version: 3.11
+   - Application root: the folder containing passenger_wsgi.py
+     (i.e. domains/app.niahospitals.com/public_html)
+   - Application URL: app.niahospitals.com
+   - Application startup file: passenger_wsgi.py
+   - Application entry point: application
+   If an app already exists pointing at a different/old folder, fix the
+   application root rather than creating a second app.
+
+3. On the app's page:
+   - "Run pip install" on requirements.txt
+     (or Terminal: source <venv>/bin/activate && pip install -r requirements.txt)
+   - Add environment variables:
+       SECRET_KEY   = a long random string (generate one, don't reuse)
+       MAIL_PASSWORD = the real mailbox password (the code has an old
+                       fallback; do not rely on it)
+   - Press RESTART.
+
+4. Open https://app.niahospitals.com and log in as admin, then choose
+   LIVE APP on the environment chooser.
+   Create real staff accounts under Admin > Staff & Users and set each
+   person's salary under Payroll & IOUs.
+   TRAINING MODE shows demo logins (nurse / doctor / cashier / lab /
+   pharmacist / store / cleaner = password123); its data never touches live.
+
+Troubleshooting
+- 500 error after deploy: packages not installed (step 3), passenger_wsgi.py
+  not at the top level (step 1), or the app root points at the wrong folder
+  (step 2). Check the error log path shown on the Python app page
+  (stderr.log / passenger.log).
+- "Address already in use" / recursion: only ONE Python app should serve the
+  domain; remove old/stale app entries pointing at the same URL.
+- Voice dictation: works in Chrome/Edge over https:// — fine on the live site.
+- Emails send via info@niahospitals.com port 465 SSL — set MAIL_* env vars
+  to override.
+- Sample inventory is disabled by default (SEED_SAMPLE_INVENTORY=0). Set it
+  to "1" only if you want demo stock seeded on an empty database.

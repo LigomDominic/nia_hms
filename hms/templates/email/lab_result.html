@@ -1,0 +1,13 @@
+<div style="font-family:Arial,sans-serif;max-width:620px">
+  <div style="background:#2b2e30;color:#9be3ae;padding:14px 18px;font-weight:bold;font-size:18px">{{ HOSPITAL_NAME }} · Laboratory Result</div>
+  <div style="padding:16px 18px;border:1px solid #d9e3dc">
+    <p>Dear {{ req.patient.full_name }},</p>
+    <p>Your result for request {{ docno('lab', req.id) }} (Hospital ID <b>{{ req.patient.hospital_id }}</b>) is ready.</p>
+    <table style="border-collapse:collapse;width:100%">
+      <tr style="background:#e9f9ee"><th align="left" style="padding:6px">Test</th><th align="left" style="padding:6px">Result</th><th align="left" style="padding:6px">Reference</th><th align="left" style="padding:6px">Flag</th></tr>
+      {% for i in req.items %}<tr><td style="padding:6px;border-bottom:1px solid #eee">{{ i.test_name }}</td><td style="padding:6px;border-bottom:1px solid #eee"><b>{{ i.result }}</b> {{ i.unit or '' }}{% if i.is_micro and i.micro_line %}<br><small>{{ i.micro_line }}</small>{% endif %}</td><td style="padding:6px;border-bottom:1px solid #eee">{{ i.reference_range or '-' }}</td><td style="padding:6px;border-bottom:1px solid #eee">{{ i.flag or '' }}</td></tr>{% endfor %}
+    </table>
+    {% if req.lab_comment %}<p><b>Comment:</b> {{ req.lab_comment }}</p>{% endif %}
+    <p>Requested by {{ req.requester_label }}. Please see your doctor to discuss these results.</p>
+  </div>
+</div>

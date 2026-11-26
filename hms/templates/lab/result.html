@@ -1,0 +1,65 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge %}
+{% block title %}Lab result {{ docno('lab', req.id) }}{% endblock %}
+{% block content %}
+{% set micro_items = req.items|selectattr('is_micro')|list %}
+{% set plain_items = req.items|rejectattr('is_micro')|rejectattr('result_template')|list %}
+{% set tpl_items = req.items|rejectattr('is_micro')|selectattr('result_template')|list %}
+<div class="printable">
+  {% with doc_title='Laboratory result', doc_no=docno('lab', req.id) %}{% include '_doc_head.html' %}{% endwith %}
+  <dl class="kv"><dt>Patient</dt><dd>{{ req.patient.full_name }} ({{ req.patient.hospital_id }})</dd><dt>Gender / Age</dt><dd>{{ req.patient.gender or '-' }} / {{ req.patient.age if req.patient.age is not none else '-' }}</dd>
+    <dt>Requested by</dt><dd>{{ req.requester_label }} on {{ req.created_at|dt }}</dd>
+    <dt>Status</dt><dd>{{ badge(req.status, req.status_label) }}</dd>
+    {% if req.completed_at %}<dt>Reported</dt><dd>{{ req.completed_at|dt }} by {{ req.completed_by.full_name if req.completed_by else '-' }}</dd>{% endif %}
+    {% if req.delivery_status %}<dt>Delivery</dt><dd>{{ req.delivery_label }}</dd>{% endif %}</dl>
+  {% if plain_items %}
+  <table style="margin-top:1rem"><tr><th>Test</th><th>Result</th><th>Unit</th><th>Reference</th><th>Flag</th></tr>
+    {% for i in plain_items %}<tr><td>{{ i.test_name }}</td><td><b>{{ i.result or 'Pending' }}</b></td><td>{{ i.unit or '' }}</td><td>{{ i.reference_range or '-' }}</td><td>{{ i.flag or '' }}</td></tr>{% endfor %}</table>
+  {% endif %}
+  {% for i in tpl_items %}
+  {% set tpl = i.result_template %}
+  {% set vals = i.result_values %}
+  <table class="micro-sheet">
+    <tr><th class="ms-title" colspan="5">{{ i.test_name }}</th></tr>
+    <tr class="ms-heads"><td>Analyte</td><td>Result</td><td>Unit</td><td>Reference</td><td>Flag</td></tr>
+    {% for f in tpl.fields %}
+    {% set v = vals.get(f.n) %}
+    {% if v and (v.v or v.f) %}
+    <tr class="ms-vals"><td>{{ f.n }}</td><td><b>{{ v.v }}</b></td><td>{{ f.u or i.unit or '' }}</td><td>{{ f.r or i.reference_range or '' }}</td><td>{{ v.f or '' }}</td></tr>
+    {% endif %}
+    {% endfor %}
+  </table>
+  {% endfor %}
+  {% for i in micro_items %}
+  {% set m = i.micro %}
+  {% set pairs = i.micro_drug_pairs() %}
+  <table class="micro-sheet">
+    <tr><th class="ms-title" colspan="5">Microbiology Result Sheet</th></tr>
+    <tr class="ms-heads"><td>Surname:</td><td>Other names:</td><td>Age</td><td>Sex</td><td>Lab. No</td></tr>
+    <tr class="ms-vals"><td>{{ req.patient.last_name }}</td>
+      <td>{{ req.patient.first_name }}{% if req.patient.other_names %} {{ req.patient.other_names }}{% endif %}</td>
+      <td>{{ req.patient.age if req.patient.age is not none else '' }}</td><td>{{ (req.patient.gender or '')[:1] }}</td>
+      <td class="mono">{{ docno('lab', req.id) }}</td></tr>
+    <tr><td class="ms-lbl">Specimen</td><td colspan="4">{{ m.specimen or i.test_name }}</td></tr>
+    <tr><td class="ms-lbl">Macroscopy</td><td colspan="4">{{ m.macroscopy }}</td></tr>
+    <tr><td class="ms-lbl">Microscopy</td><td colspan="4">{{ m.microscopy }}</td></tr>
+    <tr><td class="ms-lbl">Culture</td><td colspan="4">{{ m.culture }}</td></tr>
+    <tr><td class="ms-lbl">Gram's stain</td><td colspan="4">{{ m.gram_stain }}</td></tr>
+    <tr><td class="ms-lbl ms-drugs" rowspan="{{ pairs|length + 1 if pairs else 2 }}">Drugs</td>
+      <td class="ms-col">(Gram +ve)</td><td class="ms-col">Sensitivity (+) Resistant (R)</td>
+      <td class="ms-col">(Gram &minus;ve)</td><td class="ms-col">Sensitivity (+) Resistant (R)</td></tr>
+    {% for pos, neg in pairs %}
+    <tr><td>{{ pos.name if pos }}</td><td class="ms-res">{{ pos.res if pos }}</td>
+      <td>{{ neg.name if neg }}</td><td class="ms-res">{{ neg.res if neg }}</td></tr>
+    {% else %}
+    <tr><td colspan="4" class="empty">No antibiotic sensitivity reported.</td></tr>
+    {% endfor %}
+  </table>
+  <div class="ms-sign"><span>Med. Lab. Tech: {{ req.completed_by.full_name if req.completed_by else '..............................' }}</span><span>Date: {{ req.completed_at|d if req.completed_at else '......................' }}</span></div>
+  {% endfor %}
+  {% if req.lab_comment %}<p style="margin-top:1rem"><b>Comment:</b> {{ req.lab_comment }}</p>{% endif %}
+  {% include '_doc_footer.html' %}
+</div>
+<div class="btn-row no-print" style="justify-content:center"><button class="btn" onclick="window.print()">Print</button>
+  <a class="btn btn-outline" href="{{ url_for('patients.profile', hospital_id=req.patient.hospital_id) }}">Patient profile</a>
+  {% if req.visit and req.visit.status != 'completed' and current_user.role in ('admin','doctor','visiting_doctor') %}<a class="btn btn-dark" href="{{ url_for('doctor.consult', visit_id=req.visit_id) }}">Back to consultation</a>{% endif %}</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge, patient_link %}
+{% block title %}Nursing{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Patient queue</h1><p>Assign each patient to a doctor and record vitals before consultation.</p></div>
+  <a class="btn btn-lg" href="{{ url_for('nurse.emergency_use') }}">Record emergency drug use</a></div>
+{% if low_drugs %}<div class="flash warning">Nurses' office stock needs attention: {% for d in low_drugs %}<b>{{ d.label }}</b> ({% if d.is_expired %}expired{% else %}{{ d.quantity }} left{% endif %}){{ ', ' if not loop.last }}{% endfor %}. <a href="{{ url_for('nurse.emergency') }}">Open emergency drugs</a></div>{% endif %}
+{% if unassigned %}
+<div class="card"><div class="card-head"><h3>Waiting for a doctor ({{ unassigned|length }})</h3></div><div class="table-wrap"><table>
+  <tr><th>Arrived</th><th>Patient</th><th>Complaint</th><th>Vitals</th><th></th></tr>
+  {% for v in unassigned %}
+  <tr><td>{{ v.created_at|dt }}</td><td>{{ patient_link(v.patient) }}</td><td>{{ v.complaint or '-' }}</td>
+    <td>{% if v.has_vitals %}<span class="badge green">Recorded</span>{% else %}<span class="badge warn">Not taken</span>{% endif %}</td>
+    <td class="btn-row"><a class="btn btn-sm btn-dark" href="{{ url_for('nurse.assign', visit_id=v.id) }}">Assign doctor</a><a class="btn btn-sm btn-outline" href="{{ url_for('nurse.vitals', visit_id=v.id) }}">Vitals</a></td></tr>
+  {% endfor %}
+</table></div></div>
+{% endif %}
+<div class="card"><div class="card-head"><h3>All open visits ({{ visits|length }})</h3></div><div class="table-wrap"><table>
+  <tr><th>Arrived</th><th>Patient</th><th>Doctor</th><th>Complaint</th><th>Vitals</th><th>Status</th><th></th></tr>
+  {% for v in visits %}
+  <tr><td>{{ v.created_at|dt }}</td><td>{{ patient_link(v.patient) }}</td><td>{% if v.doctor %}{{ v.doctor.display_name }}{% else %}<span class="badge red">Not assigned</span>{% endif %}</td><td>{{ v.complaint or '-' }}</td>
+    <td>{% if v.has_vitals %}<span class="badge green">Recorded</span><br><small>T {{ v.temperature or '-' }} · BP {{ v.blood_pressure or '-' }}</small>{% else %}<span class="badge warn">Not taken</span>{% endif %}</td>
+    <td>{{ badge(v.status, v.status_label) }}</td>
+    <td class="btn-row"><a class="btn btn-sm" href="{{ url_for('nurse.vitals', visit_id=v.id) }}">{{ 'Update' if v.has_vitals else 'Record' }} vitals</a>
+      <a class="btn btn-sm btn-outline" href="{{ url_for('nurse.assign', visit_id=v.id) }}">{{ 'Change' if v.doctor else 'Assign' }} doctor</a></td></tr>
+  {% else %}<tr><td colspan="7" class="empty">No patients waiting.</td></tr>{% endfor %}
+</table></div></div>
+{% endblock %}

@@ -1,0 +1,3 @@
+<div class="print-head"><div style="display:flex;align-items:center;gap:.6rem"><img class="doc-logo" src="{{ url_for('static', filename='img/logo.svg') }}" alt=""><div><h2 style="margin:0">{{ HOSPITAL_NAME }}</h2>
+  {% if S.print_show_address == '1' and (S.hospital_address or S.hospital_phone or S.hospital_email) %}<div class="doc-meta">{{ S.hospital_address }}{% if S.hospital_address and (S.hospital_phone or S.hospital_email) %}<br>{% endif %}{{ S.hospital_phone }}{% if S.hospital_phone and S.hospital_email %} · {% endif %}{{ S.hospital_email }}</div>{% endif %}
+  <small>{{ doc_title }}</small></div></div><div class="mono">{{ doc_no }}</div></div>

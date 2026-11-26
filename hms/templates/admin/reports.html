@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Financial reports</h1><p>{{ start|d }} — {{ end|d }}</p></div>
+  <div class="btn-row"><form class="btn-row"><input type="date" name="start" value="{{ start.isoformat() }}"><input type="date" name="end" value="{{ end.isoformat() }}"><button class="btn btn-outline">Apply</button></form>
+  <a class="btn" href="{{ url_for('admin.reports', start=start.isoformat(), end=end.isoformat(), print=1) }}">Print report</a></div></div>
+<div class="grid grid-4" style="margin-bottom:1.2rem">
+  <div class="stat dark"><div class="label">Total collected (incl. wallet)</div><div class="value">{{ total|money }}</div></div>
+  <div class="stat"><div class="label">Wallet deposits</div><div class="value">{{ deposits|money }}</div></div>
+  <div class="stat"><div class="label">Visits</div><div class="value">{{ visits }}</div></div>
+  <div class="stat"><div class="label">New patients</div><div class="value">{{ new_patients }}</div></div>
+</div>
+<div class="grid grid-2">
+  <div class="card"><h3>By service</h3><table>{% for k, v in by_category.items() %}<tr><td>{{ k }}</td><td class="num">{{ v|money }}</td></tr>{% else %}<tr><td class="empty">No payments in range.</td></tr>{% endfor %}</table></div>
+  <div class="card"><h3>By payment method</h3><table>{% for k, v in by_method.items() %}<tr><td>{{ k }}</td><td class="num">{{ v|money }}</td></tr>{% else %}<tr><td class="empty">No payments in range.</td></tr>{% endfor %}</table>
+    <p class="muted" style="font-size:.85rem">E-Wallet payments are services paid from money already deposited (counted under wallet deposits).</p></div>
+</div>
+{% endblock %}

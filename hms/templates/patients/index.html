@@ -1,0 +1,13 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge, patient_link %}
+{% block title %}All Patients{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>All Patients</h1><p>Most recent 200 registrations.</p></div>
+{% if current_user.role in ('admin','cashier') %}<a class="btn" href="{{ url_for('cashier.register') }}">+ Register new patient</a>{% endif %}</div>
+<div class="card"><div class="table-wrap"><table>
+  <tr><th>Patient</th><th>Gender / Age</th><th>Phone</th><th>Registered</th><th>Status</th><th class="num">Wallet</th><th class="num">Outstanding</th></tr>
+  {% for p in patients %}
+  <tr><td>{{ patient_link(p) }}</td><td>{{ p.gender or '-' }}{% if p.age is not none %} / {{ p.age }}y{% endif %}</td><td>{{ p.phone or '-' }}</td>
+    <td>{{ p.created_at|dt }}</td><td>{{ badge(p.status, p.status) }}</td><td class="num">{{ p.wallet_balance|money }}</td><td class="num">{{ p.outstanding_balance|money }}</td></tr>
+  {% else %}<tr><td colspan="7" class="empty">No patients registered yet.</td></tr>{% endfor %}
+</table></div></div>
+{% endblock %}

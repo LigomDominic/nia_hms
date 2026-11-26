@@ -1,0 +1,27 @@
+{% extends 'base.html' %}{% block title %}Receipt {{ docno('receipt', bill.id) }}{% endblock %}
+{% set paper = request.args.get('paper') if request.args.get('paper') in ('A4','A5','letter','80mm','58mm') else S.receipt_paper %}
+{% block print_page %}{{ page_css(paper) }}{% endblock %}
+{% block content %}
+<div class="printable{% if paper in ('80mm', '58mm') %} thermal{% if paper == '58mm' %} w58{% endif %}{% endif %}">
+  {% with doc_title='Payment receipt', doc_no=docno('receipt', bill.id) %}{% include '_doc_head.html' %}{% endwith %}
+  <dl class="kv"><dt>Patient</dt><dd>{{ bill.patient.full_name }} ({{ bill.patient.hospital_id }})</dd><dt>Service</dt><dd>{{ bill.category_label }} — {{ bill.description }}</dd>
+    <dt>Bill amount</dt><dd>{{ bill.amount|money }}</dd><dt>Status</dt><dd>{{ bill.status_label }}</dd></dl>
+  <h3 style="margin-top:1rem">Payments</h3>
+  <table><tr><th>Date</th><th>Method</th><th class="hide-thermal">Reference</th><th class="hide-thermal">Cashier</th><th class="num">Amount</th></tr>
+    {% for pay in bill.payments %}<tr><td>{{ pay.created_at|dt }}</td><td>{{ pay.method_label }}</td><td class="hide-thermal">{{ pay.reference or '-' }}</td><td class="hide-thermal">{{ pay.received_by.full_name if pay.received_by else '-' }}</td><td class="num">{{ pay.amount|money }}</td></tr>{% endfor %}
+    <tr><td colspan="4"><b>Balance</b></td><td class="num"><b>{{ bill.balance|money }}</b></td></tr></table>
+  {% if S.receipt_show_wallet == '1' %}<p class="muted" style="margin-top:1rem">Wallet balance after transaction: {{ bill.patient.wallet_balance|money }}</p>{% endif %}
+  <div style="text-align:center;margin-top:1.2rem"><img class="qr" src="{{ docno('receipt', bill.id)|qr }}" alt="Receipt {{ docno('receipt', bill.id) }}"><div class="mono" style="font-size:.8rem">{{ docno('receipt', bill.id) }}</div></div>
+  <p style="margin-top:1rem">Printed by: <b>{{ current_user.full_name }}</b> ({{ current_user.role_label }})</p>
+  {% include '_doc_footer.html' %}
+</div>
+<div class="btn-row no-print" style="justify-content:center">
+  <a class="btn" href="{{ url_for('cashier.receipt', bill_id=bill.id, paper='A4', print='force') }}">Print A4</a>
+  <a class="btn btn-dark" href="{{ url_for('cashier.receipt', bill_id=bill.id, paper='80mm', print='force') }}">Print 80 mm</a>
+  <a class="btn btn-dark" href="{{ url_for('cashier.receipt', bill_id=bill.id, paper='58mm', print='force') }}">Print 58 mm</a>
+  <a class="btn btn-outline" href="{{ url_for('cashier.dashboard') }}">Back to queue</a>
+  <a class="btn btn-outline" href="{{ url_for('patients.profile', hospital_id=bill.patient.hospital_id) }}">Patient profile</a>
+  {% if bill.patient.email %}<form method="post" action="{{ url_for('cashier.receipt_email', bill_id=bill.id) }}" style="display:inline"><button class="btn">Email receipt to {{ bill.patient.email }}</button></form>{% endif %}</div>
+<p class="muted no-print" style="text-align:center">Default size is set in Admin &rsaquo; Settings &rsaquo; Printer (currently: {{ S.receipt_paper }}). If the print comes out tiny in the middle of the page, the size here must match the printer the browser prints to.</p>
+{% endblock %}
+{% block scripts %}{% if request.args.get('print') == 'force' or (S.auto_print_receipt == '1' and request.args.get('print')) %}<script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });</script>{% endif %}{% endblock %}

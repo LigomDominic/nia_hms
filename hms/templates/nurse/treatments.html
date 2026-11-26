@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Treatment chart{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Treatment chart</h1><p>{{ p.full_name }} · <span class="mono">{{ p.hospital_id }}</span></p></div>
+<a class="btn btn-outline" href="{{ url_for('patients.profile', hospital_id=p.hospital_id) }}">Patient profile</a></div>
+{% if p.allergies %}<p class="flash danger"><strong>Allergies:</strong> {{ p.allergies }}</p>{% endif %}
+<p>Treatment orders are linked to existing prescriptions. Recording treatment does not collect payment or change pharmacy stock. Administration can be recorded only after Pharmacy dispenses the prescription. Times use the application's server timezone.</p>
+<div class="card">
+<h3>Add treatment from a prescription</h3>
+{% if items %}
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="order">
+<label for="prescription_item_id">Prescribed medication</label>
+<select id="prescription_item_id" name="prescription_item_id" required>
+{% for item in items %}<option value="{{ item.id }}">Rx #{{ item.prescription_id }} — {{ item.drug_name }} — {{ item.dosage or 'dose not specified' }} / {{ item.frequency or '-' }} / {{ item.duration or '-' }} — {{ item.prescription.status_label }}</option>{% endfor %}
+</select>
+<p>Confirm the instructions below against the selected prescription before saving.</p>
+<div class="form-grid">
+<div><label>Dose<input name="dose" maxlength="80" required></label></div>
+<div><label>Route<select name="route" required><option value="">Select route</option>{% for route in routes %}<option>{{ route }}</option>{% endfor %}</select></label></div>
+<div><label>Frequency<input name="frequency" maxlength="80" required placeholder="As prescribed"></label></div>
+<div><label>Duration<input name="duration" maxlength="80" required placeholder="As prescribed"></label></div>
+</div>
+<label>Additional instructions<textarea name="instructions" rows="2" maxlength="5000" data-voice></textarea></label>
+<button class="btn">Add treatment order</button>
+</form>
+{% else %}<p>No eligible prescriptions found. A doctor must first prescribe medication through a consultation.</p>{% endif %}
+</div>
+<h2>Treatment orders</h2>
+{% for order in orders %}
+{% set rx = order.prescription_item.prescription %}
+<section class="card">
+<h3>{{ order.prescription_item.drug_name }} · {{ order.status|capitalize }}</h3>
+<p>Order #{{ order.id }} · Rx #{{ rx.id }} · Pharmacy: {{ rx.status_label }}</p>
+<dl class="kv"><dt>Dose</dt><dd>{{ order.dose }}</dd><dt>Route</dt><dd>{{ order.route }}</dd><dt>Frequency</dt><dd>{{ order.frequency }}</dd><dt>Duration</dt><dd>{{ order.duration }}</dd><dt>Ordered</dt><dd>{{ order.created_at|dt }} by {{ order.created_by.full_name }}</dd></dl>
+{% if order.instructions %}<p style="white-space:pre-wrap">{{ order.instructions }}</p>{% endif %}
+{% if order.status == 'active' %}
+{% if rx.status == 'dispensed' and (current_user.role in ('admin','nurse') or module_override('treatment') == 'manage') %}
+<details><summary>Record administration / withheld / refused dose</summary>
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="administer"><input type="hidden" name="order_id" value="{{ order.id }}"><input type="hidden" name="submission_token" value="{{ submission_token }}">
+<div class="form-grid">
+<label>Time of administration / decision<input type="datetime-local" name="administered_at" value="{{ current_time }}" max="{{ current_time }}" required></label>
+<label>Outcome<select name="outcome" required><option value="given">Given</option><option value="withheld">Withheld</option><option value="refused">Refused</option></select></label>
+<label>Actual dose<input name="dose" maxlength="80" placeholder="Required when given"></label>
+<label>Actual route<select name="route"><option value="">Select route</option>{% for route in routes %}<option>{{ route }}</option>{% endfor %}</select></label>
+</div>
+<label>Notes / reason (required when withheld or refused)<textarea name="notes" maxlength="5000" rows="2" data-voice></textarea></label>
+<label>Signature (typed name)<input name="signature" maxlength="120" required></label>
+<button class="btn">Save administration record</button>
+</form></details>
+{% elif rx.status != 'dispensed' %}<p>Administration unavailable until the prescription is dispensed.</p>{% endif %}
+<details><summary>Stop treatment</summary><form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="stop"><input type="hidden" name="order_id" value="{{ order.id }}">
+<label>Reason for stopping<input name="stop_reason" maxlength="500" required></label><button class="btn btn-outline">Stop treatment</button>
+</form></details>
+{% else %}<p>Stopped {{ order.stopped_at|dt }} by {{ order.stopped_by.full_name }}: {{ order.stop_reason }}</p>{% endif %}
+</section>
+{% else %}<div class="card">No treatment orders recorded yet.</div>{% endfor %}
+<h2>Medication administration history</h2>
+<p>Records are retained without overwriting previous administrations.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Time</th><th>Medication / order</th><th>Outcome</th><th>Actual dose / route</th><th>Notes</th><th>Signature / recorded by</th></tr></thead>
+<tbody>{% for record in history.items %}<tr>
+<td>{{ record.administered_at|dt }}</td><td>{{ record.order.prescription_item.drug_name }} / #{{ record.order_id }}</td><td>{{ record.outcome|capitalize }}</td><td>{{ record.dose or '-' }} / {{ record.route or '-' }}</td><td style="white-space:pre-wrap">{{ record.notes or '-' }}</td><td>{{ record.signature }}<br>{{ record.recorded_by.full_name }}<br>{{ record.recorded_at|dt }}</td>
+</tr>{% else %}<tr><td colspan="6">No administration records yet.</td></tr>{% endfor %}</tbody>
+</table></div>
+<div class="btn-row">
+{% if history.has_prev %}<a class="btn btn-outline" href="{{ url_for('treatment.chart', hospital_id=p.hospital_id, page=history.prev_num) }}">Newer records</a>{% endif %}
+{% if history.has_next %}<a class="btn btn-outline" href="{{ url_for('treatment.chart', hospital_id=p.hospital_id, page=history.next_num) }}">Older records</a>{% endif %}
+</div>
+{% endblock %}

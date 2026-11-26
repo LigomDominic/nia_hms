@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% block title %}Drug inventory{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Drug inventory</h1><p>Stock value: <b>{{ stock_value|money }}</b></p></div><a class="btn" href="{{ url_for('pharmacy.drug_form') }}">+ Add drug</a></div>
+<div class="card">
+  <form class="btn-row" style="margin-bottom:1rem"><input name="q" value="{{ q }}" placeholder="Search drug or batch" style="max-width:320px"><button class="btn btn-outline">Search</button></form>
+  <div class="table-wrap"><table>
+  <tr><th>Drug</th><th>Batch</th><th>Expiry</th><th class="num">Unit price</th><th class="num">In stock</th><th class="num">Reorder at</th><th>Status</th><th></th></tr>
+  {% for d in drugs %}
+  <tr><td><b>{{ d.name }}</b><br><small>{{ d.strength or '' }} {{ d.form or '' }}</small></td><td>{{ d.batch_no or '-' }}</td>
+    <td>{% if d.is_expired %}<span class="badge red">{{ d.expiry_date|d }}</span>{% elif d.expires_soon %}<span class="badge warn">{{ d.expiry_date|d }}</span>{% else %}{{ d.expiry_date|d }}{% endif %}</td>
+    <td class="num">{{ d.unit_price|money }}</td><td class="num"><b>{{ d.quantity }}</b></td><td class="num">{{ d.reorder_level }}</td>
+    <td>{% if not d.is_active %}<span class="badge">Inactive</span>{% elif d.is_low %}<span class="badge red">Low stock</span>{% else %}<span class="badge green">OK</span>{% endif %}</td>
+    <td class="btn-row"><a class="btn btn-sm" href="{{ url_for('pharmacy.stock', drug_id=d.id) }}">Stock</a><a class="btn btn-sm btn-outline" href="{{ url_for('pharmacy.drug_form', drug_id=d.id) }}">Edit</a></td></tr>
+  {% else %}<tr><td colspan="8" class="empty">No drugs.</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endblock %}

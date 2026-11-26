@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Record expense{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Record expense</h1><p>Enter a general running expense paid by cash or bank.</p></div>
+  <a class="btn btn-outline" href="{{ url_for('expenses.index') }}">Back to expenses</a></div>
+
+<form method="post" class="card" style="max-width:640px">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="form-grid">
+    <div><label for="expense_date">Date *</label><input type="date" name="expense_date" id="expense_date" value="{{ request.form.get('expense_date', today) }}" max="{{ today }}" required></div>
+    <div><label for="category">Category *</label><select name="category" id="category" required>
+      <option value="">— choose —</option>
+      {% for c in categories %}<option {% if request.form.get('category') == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select></div>
+    <div><label for="method">Paid via *</label><select name="method" id="method" required>
+      {% for k, label in methods.items() %}<option value="{{ k }}" {% if request.form.get('method') == k %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select></div>
+    <div><label for="amount">Amount *</label><input name="amount" id="amount" inputmode="decimal" value="{{ request.form.get('amount', '') }}" required></div>
+    <div style="grid-column:1/-1"><label for="description">Description *</label><input name="description" id="description" maxlength="255" value="{{ request.form.get('description', '') }}" placeholder="e.g. Diesel for ambulance" required></div>
+    <div><label for="payee">Paid to (optional)</label><input name="payee" id="payee" maxlength="120" value="{{ request.form.get('payee', '') }}"></div>
+    <div><label for="reference">Reference / receipt no (optional)</label><input name="reference" id="reference" maxlength="80" value="{{ request.form.get('reference', '') }}"></div>
+  </div>
+  <div class="btn-row" style="margin-top:.8rem"><button class="btn btn-lg">Save expense</button></div>
+</form>
+{% endblock %}

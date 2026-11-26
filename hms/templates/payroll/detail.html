@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Payroll — {{ staff.full_name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ staff.display_name }}</h1><p>{{ staff.role_label }} ·
+  salary: <b>{{ staff.monthly_salary|money if staff.monthly_salary else 'not set' }}</b> ·
+  IOU outstanding: <b style="color:var(--danger)">{{ outstanding|money }}</b></p></div>
+  <a class="btn btn-outline" href="{{ url_for('payroll.index') }}">Back to payroll</a></div>
+
+{% if can_module('payroll', 'manage') %}
+<div class="grid grid-2">
+  <div class="card"><h3>Pay salary</h3>
+    <form method="post" action="{{ url_for('payroll.pay', user_id=staff.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-grid">
+        <div><label for="period">Salary month *</label><input type="month" id="period" name="period" value="{{ request.form.get('period', current_period) }}" max="{{ current_period }}" required></div>
+        <div><label for="gross">Gross amount *</label><input id="gross" name="gross" inputmode="decimal" value="{{ request.form.get('gross', '%.2f'|format(staff.monthly_salary) if staff.monthly_salary else '') }}" required></div>
+        <div><label for="iou_deduction">Deduct from IOUs</label><input id="iou_deduction" name="iou_deduction" inputmode="decimal" value="{{ request.form.get('iou_deduction', '%.2f'|format(outstanding) if outstanding else '0') }}">
+          <small class="muted">Up to {{ outstanding|money }} outstanding</small></div>
+        <div><label for="method">Paid via *</label><select id="method" name="method" required>
+          {% for k, label in methods.items() %}<option value="{{ k }}">{{ label }}</option>{% endfor %}</select></div>
+        <div style="grid-column:1/-1"><label for="note">Note (optional)</label><input id="note" name="note" maxlength="255"></div>
+      </div>
+      <button class="btn" style="margin-top:.8rem">Record payment</button>
+    </form>
+  </div>
+
+  <div class="card"><h3>Issue IOU (salary advance)</h3>
+    <form method="post" action="{{ url_for('payroll.issue_iou', user_id=staff.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="form-grid">
+        <div><label for="amount">Amount *</label><input id="amount" name="amount" inputmode="decimal" required></div>
+        <div><label for="iou_method">Paid from *</label><select id="iou_method" name="method" required>
+          {% for k, label in methods.items() %}<option value="{{ k }}">{{ label }}</option>{% endfor %}</select></div>
+        <div style="grid-column:1/-1"><label for="reason">Reason *</label><input id="reason" name="reason" maxlength="255" data-voice placeholder="e.g. Personal advance request" required></div>
+      </div>
+      <button class="btn" style="margin-top:.8rem">Issue IOU</button>
+      <p class="muted" style="margin-top:.5rem">The advance is logged under Expenses (Salaries &amp; wages) so the cash/bank totals stay correct.</p>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="card"><h3>Salary payments ({{ payments|length }})</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Month</th><th class="num">Gross</th><th class="num">IOU deducted</th><th class="num">Net paid</th><th>Paid via</th><th>Paid by</th><th>Note</th><th></th></tr></thead>
+    <tbody>
+      {% for p in payments %}
+      <tr><td>{{ p.period_label }}</td><td class="num">{{ p.gross|money }}</td>
+        <td class="num">{{ p.iou_deduction|money if p.iou_deduction else '—' }}</td>
+        <td class="num"><b>{{ p.net|money }}</b></td><td>{{ p.method_label }}</td>
+        <td>{{ p.paid_by.full_name }}<br><small class="muted">{{ p.created_at|dt }}</small></td>
+        <td>{{ p.note or '—' }}</td>
+        <td>{% if current_user.role == 'admin' %}
+          <form method="post" action="{{ url_for('payroll.void_payment', payment_id=p.id) }}"
+                onsubmit="return confirm('Void this salary payment? IOU deductions will be restored.')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-outline" style="color:var(--danger)">Void</button></form>
+        {% endif %}</td></tr>
+      {% else %}<tr><td colspan="8" class="empty">No salary payments yet.</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+
+<div class="card"><h3>IOU ledger ({{ ious|length }})</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Reason</th><th class="num">Amount</th><th class="num">Settled</th><th class="num">Remaining</th><th>Status</th><th>Via</th><th></th></tr></thead>
+    <tbody>
+      {% for i in ious %}
+      <tr>
+        <td>{{ i.created_at|d }}</td><td>{{ i.reason }}
+          {% for s in i.settlements %}<br><small class="muted">↳ {{ s.created_at|d }}: {{ s.amount|money }} — {{ s.kind_label }}{% if s.note %} ({{ s.note }}){% endif %}</small>{% endfor %}</td>
+        <td class="num">{{ i.amount|money }}</td><td class="num">{{ i.settled_amount|money if i.settled_amount else '—' }}</td>
+        <td class="num"><b>{{ i.remaining|money }}</b></td>
+        <td><span class="badge {{ 'ok' if i.status == 'settled' else ('warn' if i.status == 'partial' else 'danger') }}">{{ i.status_label }}</span></td>
+        <td>{{ i.method_label }}</td>
+        <td>
+          {% if i.remaining > 0 and can_module('payroll', 'manage') %}
+          <form method="post" action="{{ url_for('payroll.repay_iou', iou_id=i.id) }}" class="btn-row" style="margin:0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input name="amount" inputmode="decimal" style="width:110px" value="{{ '%.2f'|format(i.remaining) }}">
+            <select name="method">{% for k, label in methods.items() %}<option value="{{ k }}">{{ label }}</option>{% endfor %}</select>
+            <button class="btn btn-sm btn-outline">Repay</button>
+          </form>
+          {% endif %}
+          {% if i.remaining > 0 and i.settled_amount == 0 and current_user.role == 'admin' %}
+          <form method="post" action="{{ url_for('payroll.void_iou', iou_id=i.id) }}" style="margin-top:.3rem"
+                onsubmit="return confirm('Void this IOU and remove its expense entry?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn btn-sm btn-outline" style="color:var(--danger)">Void</button></form>
+          {% endif %}
+        </td></tr>
+      {% else %}<tr><td colspan="8" class="empty">No IOUs issued to this staff member.</td></tr>{% endfor %}
+    </tbody></table></div>
+</div>
+{% endblock %}

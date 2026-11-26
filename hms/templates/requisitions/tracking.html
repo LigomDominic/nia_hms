@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Issue tracking{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Issue tracking</h1><p>Total quantities issued to each station by Pharmacy.</p></div>
+  <a class="btn btn-outline" href="{{ url_for('requisitions.index') }}">Back to requests</a></div>
+<div class="card">
+  <div class="table-wrap"><table>
+    <thead><tr><th>Item</th>{% for s in stations %}<th class="num">{{ s }}</th>{% endfor %}<th class="num">Total</th></tr></thead>
+    <tbody>
+      {% for name, cols in by_item.items() %}
+      <tr><td>{{ name }}</td>
+        {% for s in stations %}<td class="num">{{ cols[s] or '' }}</td>{% endfor %}
+        <td class="num"><b>{{ cols.values()|sum }}</b></td></tr>
+      {% else %}<tr><td colspan="5" class="empty">Nothing issued to stations yet.</td></tr>{% endfor %}
+      {% if by_item %}
+      <tr><td><b>Totals</b></td>
+        {% for s in stations %}<td class="num"><b>{{ station_totals[s] }}</b></td>{% endfor %}
+        <td class="num"><b>{{ grand_total }}</b></td></tr>
+      {% endif %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}ANC card · {{ anc.patient.full_name }}{% endblock %}
+{% block content %}
+<div class="printable" style="max-width:1000px">
+  {% with doc_title='Ante-Natal Card', doc_no=anc.patient.hospital_id %}{% include '_doc_head.html' %}{% endwith %}
+  {% include 'anc/_sheet.html' %}
+  {% include '_doc_footer.html' %}
+</div>
+<div class="btn-row no-print" style="justify-content:center"><button class="btn" onclick="window.print()">Print</button>
+  <a class="btn btn-outline" href="{{ url_for('anc.card', anc_id=anc.id) }}">Back to card</a>
+  <a class="btn btn-outline" href="{{ url_for('patients.profile', hospital_id=anc.patient.hospital_id) }}">Patient profile</a></div>
+{% endblock %}

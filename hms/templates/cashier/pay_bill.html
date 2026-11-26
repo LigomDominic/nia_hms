@@ -1,0 +1,36 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge %}
+{% block title %}Bill #{{ bill.id }}{% endblock %}
+{% block content %}
+{% set p = bill.patient %}
+<div class="page-head"><div><h1>Bill #{{ bill.id }} · {{ bill.category_label }}</h1><p>{{ bill.description }}</p></div>{{ badge(bill.status, bill.status_label) }}</div>
+<div class="grid grid-2">
+  <div class="card">
+    <h3>Patient</h3>
+    <dl class="kv"><dt>Name</dt><dd><a href="{{ url_for('patients.profile', hospital_id=p.hospital_id) }}">{{ p.full_name }}</a></dd>
+      <dt>Hospital ID</dt><dd class="mono">{{ p.hospital_id }}</dd><dt>Wallet balance</dt><dd><b>{{ p.wallet_balance|money }}</b></dd>
+      <dt>Requested by</dt><dd>{{ bill.created_by.display_name if bill.created_by else '-' }}</dd><dt>Date</dt><dd>{{ bill.created_at|dt }}</dd></dl>
+    <h3 style="margin-top:1rem">Items</h3>
+    {% if bill.lab_request %}
+      <table>{% for i in bill.lab_request.items %}<tr><td>{{ i.test_name }}</td><td class="num">{{ i.price|money }}</td></tr>{% endfor %}</table>
+    {% elif bill.prescription %}
+      <table>{% for i in bill.prescription.items %}<tr><td>{{ i.drug_name }} × {{ i.quantity }}</td><td class="num">{{ i.line_total|money }}</td></tr>{% endfor %}</table>
+    {% else %}<p>{{ bill.description }}</p>{% endif %}
+  </div>
+  <div class="card">
+    <dl class="kv" style="font-size:1.05rem"><dt>Bill amount</dt><dd>{{ bill.amount|money }}</dd><dt>Already paid</dt><dd>{{ bill.amount_paid|money }}</dd>
+      <dt>Balance due</dt><dd><b style="font-size:1.3rem">{{ bill.balance|money }}</b></dd></dl>
+    {% if bill.status in ('unpaid', 'part_paid') %}
+    <form method="post" style="margin-top:1rem">
+      <div class="field"><label>Amount received</label><input name="amount" value="{{ '%.2f'|format(bill.balance) }}" required></div>
+      <div class="field"><label>Method</label><select name="method">{% for k, v in PAYMENT_METHODS.items() %}<option value="{{ k }}" {% if k == 'wallet' and p.wallet_balance <= 0 %}disabled{% endif %}>{{ v }}{% if k == 'wallet' %} ({{ p.wallet_balance|money }}){% endif %}</option>{% endfor %}</select></div>
+      <div class="field"><label>Reference (POS / transfer)</label><input name="reference"></div>
+      <button class="btn btn-lg">Receive payment{% if bill.lab_request %} & post to Lab{% elif bill.prescription %} & post to Pharmacy{% endif %}</button>
+    </form>
+    <form method="post" action="{{ url_for('cashier.cancel', bill_id=bill.id) }}" style="margin-top:1rem" onsubmit="return confirm('Cancel this bill?')">
+      <button class="btn btn-danger btn-sm">Cancel bill</button></form>
+    {% else %}
+      <a class="btn" href="{{ url_for('cashier.receipt', bill_id=bill.id) }}">View receipt</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

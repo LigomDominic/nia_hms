@@ -1,0 +1,33 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge %}
+{% block title %}Wallet · {{ p.hospital_id }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>E-Wallet</h1><p><a href="{{ url_for('patients.profile', hospital_id=p.hospital_id) }}">{{ p.full_name }}</a> · <span class="mono">{{ p.hospital_id }}</span></p></div></div>
+<div class="grid grid-3" style="margin-bottom:1.2rem">
+  <div class="stat dark"><div class="label">Wallet balance</div><div class="value">{{ p.wallet_balance|money }}</div></div>
+  <div class="stat"><div class="label">Outstanding bills</div><div class="value">{{ p.outstanding_balance|money }}</div></div>
+  <div class="stat"><div class="label">How it works</div><div style="font-size:.88rem">Every new bill (drugs, tests, consultation) is auto-charged from this wallet. If it only covers part, the rest goes to the cashier queue.</div></div>
+</div>
+<div class="grid grid-2">
+  <form method="post" class="card"><h3>Fund wallet (deposit)</h3>
+    <input type="hidden" name="action" value="deposit">
+    <div class="field"><label>Amount</label><input name="amount" required placeholder="e.g. 50000"></div>
+    <div class="field"><label>Received by</label><select name="method">{% for k, v in methods.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Reference</label><input name="reference" placeholder="POS / transfer reference"></div>
+    <label class="check"><input type="checkbox" name="apply_outstanding" value="1" checked> Use deposit to settle outstanding bills now</label>
+    <div style="margin-top:.8rem"><button class="btn btn-lg">Deposit</button></div>
+  </form>
+  <form method="post" class="card" onsubmit="return confirm('Refund cash from wallet?')"><h3>Refund from wallet</h3>
+    <input type="hidden" name="action" value="refund">
+    <div class="field"><label>Amount</label><input name="amount" required></div>
+    <div class="field"><label>Reason</label><input name="reason" placeholder="e.g. Surgery cancelled"></div>
+    <button class="btn btn-danger">Record refund</button>
+  </form>
+</div>
+<div class="card"><h3>Wallet statement</h3><div class="table-wrap"><table>
+  <tr><th>Date</th><th>Type</th><th>Description</th><th>Method / Ref</th><th class="num">Amount</th><th class="num">Balance</th><th>By</th></tr>
+  {% for t in p.wallet_transactions %}
+  <tr><td>{{ t.created_at|dt }}</td><td>{{ badge(t.kind) }}</td><td>{{ t.description }}</td><td>{{ PAYMENT_METHODS.get(t.method, '-') if t.method else '-' }} {{ t.reference or '' }}</td>
+    <td class="num">{{ '+' if t.kind in ('deposit','refund') else '-' }}{{ t.amount|money }}</td><td class="num">{{ t.balance_after|money }}</td><td>{{ t.performed_by.full_name if t.performed_by else '-' }}</td></tr>
+  {% else %}<tr><td colspan="7" class="empty">No wallet activity yet.</td></tr>{% endfor %}
+</table></div></div>
+{% endblock %}

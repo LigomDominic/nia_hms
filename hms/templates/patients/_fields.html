@@ -1,0 +1,27 @@
+{% from '_macros.html' import field, select %}
+{% set f = form if form is defined else {} %}
+{% macro v(name) %}{{ (f.get(name) if f else (p[name] if p is defined and p else '')) or '' }}{% endmacro %}
+<fieldset>
+  <legend>Personal details</legend>
+  <div class="form-grid">
+    {{ field('first_name', 'First name', v('first_name'), required=True) }}
+    {{ field('last_name', 'Last name / Surname', v('last_name'), required=True) }}
+    {{ field('other_names', 'Other names', v('other_names')) }}
+    {{ select('gender', 'Gender', ['Male', 'Female'], v('gender')) }}
+    {% set dob = f.get('date_of_birth') if f else (p.date_of_birth.isoformat() if p is defined and p and p.date_of_birth else '') %}
+    {{ field('date_of_birth', 'Date of birth', dob, type='date') }}
+    {{ field('phone', 'Phone number', v('phone'), required=True) }}
+    {{ field('email', 'Email (for lab results)', v('email'), type='email') }}
+    {{ field('address', 'Home address', v('address')) }}
+  </div>
+</fieldset>
+<fieldset>
+  <legend>Medical & next of kin</legend>
+  <div class="form-grid">
+    {{ select('blood_group', 'Blood group', ['A+','A-','B+','B-','AB+','AB-','O+','O-'], v('blood_group')) }}
+    {{ select('genotype', 'Genotype', ['AA','AS','SS','AC','SC'], v('genotype')) }}
+    {{ field('allergies', 'Known allergies', v('allergies'), placeholder='e.g. Penicillin') }}
+    {{ field('next_of_kin_name', 'Next of kin name', v('next_of_kin_name')) }}
+    {{ field('next_of_kin_phone', 'Next of kin phone', v('next_of_kin_phone')) }}
+  </div>
+</fieldset>

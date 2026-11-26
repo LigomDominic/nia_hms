@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% block title %}Store{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>General store</h1><p>Consumables, linen, cleaning and office supplies. Receive stock and issue items to departments.</p></div><a class="btn" href="{{ url_for('store.item_form') }}">+ Add item</a></div>
+{% if low %}<div class="flash warning">Low stock: {% for i in low %}<b>{{ i.name }}</b> ({{ i.quantity }} {{ i.unit }}){{ ', ' if not loop.last }}{% endfor %}</div>{% endif %}
+<div class="card">
+  <form class="btn-row" style="margin-bottom:1rem"><input name="q" value="{{ q }}" placeholder="Search item or category" style="max-width:320px"><button class="btn btn-outline">Search</button></form>
+  <div class="table-wrap"><table><tr><th>Item</th><th>Category</th><th>Location</th><th class="num">Quantity</th><th class="num">Reorder at</th><th>Status</th><th></th></tr>
+  {% for i in items %}<tr><td><b>{{ i.name }}</b></td><td>{{ i.category or '-' }}</td><td>{{ i.location or '-' }}</td><td class="num"><b>{{ i.quantity }}</b> {{ i.unit }}</td><td class="num">{{ i.reorder_level }}</td>
+    <td>{% if i.is_low %}<span class="badge red">Low</span>{% else %}<span class="badge green">OK</span>{% endif %}</td>
+    <td class="btn-row"><a class="btn btn-sm" href="{{ url_for('store.item', item_id=i.id) }}">Receive / Issue</a><a class="btn btn-sm btn-outline" href="{{ url_for('store.item_form', item_id=i.id) }}">Edit</a></td></tr>
+  {% else %}<tr><td colspan="7" class="empty">No items.</td></tr>{% endfor %}</table></div>
+</div>
+<div class="card"><h3>Recent movements</h3><table>{% for m in recent %}<tr><td>{{ m.created_at|dt }}</td><td>{{ m.item.name }}</td><td>{{ m.kind|capitalize }}{% if m.department %} → {{ m.department }}{% endif %}</td><td class="num">{{ '%+d'|format(m.change) }}</td><td>{{ m.user.full_name if m.user else 'System' }}</td></tr>{% else %}<tr><td class="empty">None.</td></tr>{% endfor %}</table></div>
+{% endblock %}

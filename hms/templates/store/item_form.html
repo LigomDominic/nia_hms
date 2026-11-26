@@ -1,0 +1,13 @@
+{% extends 'base.html' %}{% from '_macros.html' import field, select %}
+{% block title %}{{ 'Add' if is_new else 'Edit' }} item{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ 'Add store item' if is_new else 'Edit ' ~ item.name }}</h1></div>
+<form method="post" class="card" style="max-width:820px"><div class="form-grid">
+  {{ field('name', 'Item name', item.name, required=True) }}
+  {{ select('category', 'Category', ['Consumables','Linen','Cleaning','Stationery','Equipment','Furniture','Other'], item.category) }}
+  {{ field('unit', 'Unit', item.unit or 'pcs') }}
+  {{ field('reorder_level', 'Reorder level', item.reorder_level or 5) }}
+  {{ field('location', 'Location', item.location) }}
+  {% if is_new %}{{ field('opening_quantity', 'Opening quantity', 0) }}{% endif %}
+</div><div class="btn-row"><button class="btn">Save</button><a class="btn btn-outline" href="{{ url_for('store.dashboard') }}">Cancel</a></div></form>
+{% endblock %}

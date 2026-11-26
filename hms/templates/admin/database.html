@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Database backup{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Database backup</h1><p>Download a copy of the live database, or restore one.</p></div></div>
+<div class="grid grid-2">
+  <div class="card"><h3>Download</h3>
+    <dl class="kv"><dt>Database</dt><dd class="mono">{{ db_name }}</dd>
+      <dt>Size</dt><dd>{{ '%.1f'|format(db_size / 1024 / 1024) }} MB</dd>
+      <dt>Last modified</dt><dd>{{ db_mtime|dt if db_mtime else '-' }}</dd></dl>
+    <p class="muted">Produces a consistent snapshot of the live database - safe to download while the app is running.</p>
+    <a class="btn" href="{{ url_for('admin.database_download') }}">Download latest backup</a></div>
+  <div class="card"><h3>Restore / upload</h3>
+    <p class="muted">Upload a previously downloaded <code>.db</code> file. The current database is automatically kept as a backup first. <b>Restart the app in cPanel afterwards</b> (Setup Python App &rarr; Restart).</p>
+    <form method="post" action="{{ url_for('admin.database_upload') }}" enctype="multipart/form-data">
+      <div class="field"><input type="file" name="db_file" accept=".db" required></div>
+      <button class="btn btn-danger" onclick="return confirm('Replace the live database with the uploaded file? The current one will be backed up first.')">Upload &amp; replace database</button>
+    </form></div>
+</div>
+{% if backups %}<div class="card"><h3>Backups kept on this server</h3><table><tr><th>File</th><th class="num">Size</th></tr>
+  {% for name, size in backups %}<tr><td class="mono">{{ name }}</td><td class="num">{{ '%.2f'|format(size / 1024 / 1024) }} MB</td></tr>{% endfor %}</table></div>{% endif %}
+{% endblock %}

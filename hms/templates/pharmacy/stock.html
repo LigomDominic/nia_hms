@@ -1,0 +1,16 @@
+{% extends 'base.html' %}{% block title %}Stock · {{ drug.label }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ drug.label }}</h1><p>In stock: <b>{{ drug.quantity }}</b> · Reorder at {{ drug.reorder_level }} · Batch {{ drug.batch_no or '-' }} · Expiry {{ drug.expiry_date|d }}</p></div>
+  <a class="btn btn-outline" href="{{ url_for('pharmacy.inventory') }}">Back to inventory</a></div>
+<div class="grid grid-2">
+  <form method="post" class="card"><h3>Restock (receive)</h3><input type="hidden" name="kind" value="restock">
+    <div class="form-grid"><div class="field"><label>Quantity</label><input name="quantity" required></div><div class="field"><label>New batch no.</label><input name="batch_no"></div>
+      <div class="field"><label>New expiry</label><input type="date" name="expiry_date"></div><div class="field"><label>Supplier / note</label><input name="note"></div></div>
+    <button class="btn">Add stock</button></form>
+  <form method="post" class="card"><h3>Remove (damaged / expired)</h3><input type="hidden" name="kind" value="remove">
+    <div class="field"><label>Quantity</label><input name="quantity" required></div><div class="field"><label>Reason</label><input name="note"></div>
+    <button class="btn btn-danger">Remove stock</button></form>
+</div>
+<div class="card"><h3>Stock card</h3><table><tr><th>Date</th><th>Type</th><th class="num">Change</th><th class="num">Balance</th><th>Note</th><th>By</th></tr>
+  {% for m in moves %}<tr><td>{{ m.created_at|dt }}</td><td>{{ m.reason|capitalize }}</td><td class="num">{{ '%+d'|format(m.change) }}</td><td class="num">{{ m.balance_after }}</td><td>{{ m.note or '' }}</td><td>{{ m.user.full_name if m.user else 'System' }}</td></tr>{% endfor %}</table></div>
+{% endblock %}

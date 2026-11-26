@@ -1,0 +1,28 @@
+{% extends 'base.html' %}{% from '_macros.html' import patient_link %}
+{% block title %}Emergency drug log{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Emergency drug log</h1><p>Who used which drug, on which patient, and why · {{ start|d }} to {{ end|d }}</p></div>
+  <button class="btn btn-outline" onclick="window.print()">Print</button></div>
+<form class="card form-grid" method="get">
+  <div class="field"><label>From</label><input type="date" name="start" value="{{ start.isoformat() }}"></div>
+  <div class="field"><label>To</label><input type="date" name="end" value="{{ end.isoformat() }}"></div>
+  <div class="field"><label>Drug</label><select name="drug_id"><option value="">All drugs</option>{% for d in drugs %}<option value="{{ d.id }}" {% if drug_id == d.id %}selected{% endif %}>{{ d.label }}</option>{% endfor %}</select></div>
+  <div class="field"><label>Given by</label><select name="nurse_id"><option value="">All staff</option>{% for s in staff %}<option value="{{ s.id }}" {% if nurse_id == s.id %}selected{% endif %}>{{ s.full_name }}</option>{% endfor %}</select></div>
+  <div class="field"><label>Patient (ID or name)</label><input name="q" value="{{ q }}"></div>
+  <div class="field" style="align-self:end"><button class="btn">Filter</button></div>
+</form>
+<div class="grid grid-2">
+  <div class="card"><h3>Quantity used by drug</h3><table><tr><th>Drug</th><th class="num">Qty</th></tr>
+    {% for (label, unit), qty in by_drug|dictsort(by='value', reverse=true) %}<tr><td>{{ label }}</td><td class="num">{{ qty }} {{ unit }}</td></tr>{% else %}<tr><td colspan="2" class="empty">-</td></tr>{% endfor %}</table></div>
+  <div class="card"><h3>Uses by staff</h3><table><tr><th>Staff</th><th class="num">Times</th></tr>
+    {% for name, n in by_nurse|dictsort(by='value', reverse=true) %}<tr><td>{{ name }}</td><td class="num">{{ n }}</td></tr>{% else %}<tr><td colspan="2" class="empty">-</td></tr>{% endfor %}</table></div>
+</div>
+<div class="card"><h3>Uses ({{ uses|length }})</h3><div class="table-wrap"><table>
+  <tr><th>When</th><th>Patient</th><th>Drug / batch</th><th class="num">Qty</th><th>Dose / route</th><th>Reason</th><th>Given by</th><th>Witness</th></tr>
+  {% for u in uses %}
+  <tr><td>{{ u.created_at|dt }}</td><td>{{ patient_link(u.patient) }}</td><td>{{ u.drug.label }}<br><small>{{ u.drug.batch_no or '' }}</small></td><td class="num">{{ u.quantity }} {{ u.drug.unit }}</td>
+    <td>{{ u.dose or '-' }}{% if u.route %} · {{ u.route }}{% endif %}</td><td>{{ u.reason }}{% if u.notes %}<br><small>{{ u.notes }}</small>{% endif %}</td>
+    <td>{{ u.administered_by.full_name }}</td><td>{{ u.witness or '-' }}</td></tr>
+  {% else %}<tr><td colspan="8" class="empty">No uses in this period.</td></tr>{% endfor %}
+</table></div></div>
+{% endblock %}

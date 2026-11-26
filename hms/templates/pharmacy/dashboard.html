@@ -1,0 +1,29 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge, patient_link %}
+{% block title %}Pharmacy{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Dispensing queue</h1><p>Drugs are only dispensed after payment at the Cashier (or from the e-wallet).</p></div>
+  <a class="btn btn-outline" href="{{ url_for('pharmacy.inventory') }}">Drug inventory</a></div>
+<div class="grid grid-3" style="margin-bottom:1.2rem">
+  <div class="stat dark"><div class="label">Ready to dispense</div><div class="value">{{ ready|length }}</div></div>
+  <div class="stat"><div class="label">Awaiting payment</div><div class="value">{{ awaiting|length }}</div></div>
+  <div class="stat"><div class="label">Low stock / expiring</div><div class="value">{{ low|length }} / {{ expiring|length }}</div></div>
+</div>
+<div class="card"><h2>Paid — ready to dispense</h2><div class="table-wrap"><table>
+  <tr><th>Rx</th><th>Paid</th><th>Patient</th><th>Items</th><th>Doctor</th><th class="num">Total</th><th></th></tr>
+  {% for rx in ready %}
+  <tr><td>{{ docno('rx', rx.id) }}</td><td>{{ rx.posted_at|dt }}</td><td>{{ patient_link(rx.patient) }}</td><td>{% for i in rx.items %}{{ i.drug_name }} × {{ i.quantity }}<br>{% endfor %}</td>
+    <td>{{ rx.doctor.display_name if rx.doctor else '-' }}</td><td class="num">{{ rx.total|money }}</td><td><a class="btn btn-sm btn-dark" href="{{ url_for('pharmacy.dispense', rx_id=rx.id) }}">Dispense</a></td></tr>
+  {% else %}<tr><td colspan="7" class="empty">No paid prescriptions waiting.</td></tr>{% endfor %}
+</table></div></div>
+<div class="grid grid-2">
+  <div class="card"><h3>Awaiting payment at cashier</h3><table>
+    {% for rx in awaiting %}<tr><td>{{ docno('rx', rx.id) }} {{ rx.patient.full_name }}</td><td class="num">{{ rx.bill.balance|money if rx.bill else '-' }} due</td></tr>{% else %}<tr><td class="empty">None.</td></tr>{% endfor %}</table></div>
+  <div class="card"><h3>Stock alerts</h3><table>
+    {% for d in low %}<tr><td>{{ d.label }}</td><td><span class="badge red">Low: {{ d.quantity }} left</span></td><td><a class="btn btn-sm" href="{{ url_for('pharmacy.stock', drug_id=d.id) }}">Restock</a></td></tr>{% endfor %}
+    {% for d in expiring %}<tr><td>{{ d.label }}</td><td><span class="badge {{ 'red' if d.is_expired else 'warn' }}">{{ 'Expired' if d.is_expired else 'Expires' }} {{ d.expiry_date|d }}</span></td><td></td></tr>{% endfor %}
+    {% if not low and not expiring %}<tr><td class="empty">All good.</td></tr>{% endif %}</table></div>
+</div>
+<div class="card"><h3>Recently dispensed</h3><table>
+  {% for rx in dispensed %}<tr><td>{{ docno('rx', rx.id) }}</td><td>{{ rx.patient.full_name }}</td><td>{% for i in rx.items %}{{ i.drug_name }} × {{ i.quantity }}{{ ', ' if not loop.last }}{% endfor %}</td><td>{{ rx.dispensed_at|dt }}</td><td>{{ rx.dispensed_by.full_name if rx.dispensed_by else '' }}</td></tr>
+  {% else %}<tr><td class="empty">None yet.</td></tr>{% endfor %}</table></div>
+{% endblock %}

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="NIA Hospital">
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="#2b2e30"/>
+  <path d="M27 11h10v16h16v10H37v16H27V37H11V27h16z" fill="#9be3ae"/>
+  <path d="M16 32h7l3.5-7.5 5.5 14 4-9.5 2.5 3H48" fill="none" stroke="#2b2e30" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

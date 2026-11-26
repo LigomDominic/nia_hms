@@ -1,0 +1,28 @@
+{% extends 'base.html' %}{% from '_macros.html' import patient_link %}
+{% block title %}Emergency drugs{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Nurses' office · Emergency drugs</h1><p>Stock kept in the nurses' office. Every use is recorded against a patient and the nurse who gave it.</p></div>
+  <div class="btn-row"><a class="btn btn-lg" href="{{ url_for('nurse.emergency_use') }}">Record drug use</a><a class="btn btn-outline" href="{{ url_for('nurse.emergency_drug_form') }}">+ Add drug</a></div></div>
+<div class="grid grid-4">
+  <div class="stat dark"><div class="label">Drugs in office</div><div class="value">{{ drugs|selectattr('is_active')|list|length }}</div></div>
+  <div class="stat"><div class="label">Uses recorded today</div><div class="value">{{ used_today }}</div></div>
+  <div class="stat"><div class="label">Low stock</div><div class="value">{{ low }}</div></div>
+  <div class="stat"><div class="label">Expired / expiring (90 days)</div><div class="value">{{ expiring }}</div></div>
+</div>
+<div class="card"><div class="card-head"><h3>Office inventory</h3></div><div class="table-wrap"><table>
+  <tr><th>Drug</th><th>Batch</th><th>Expiry</th><th class="num">In stock</th><th class="num">Reorder at</th><th>Status</th><th></th></tr>
+  {% for d in drugs %}
+  <tr><td><b>{{ d.name }}</b><br><small>{{ d.strength or '' }} {{ d.form or '' }}</small></td><td>{{ d.batch_no or '-' }}</td>
+    <td>{% if d.is_expired %}<span class="badge red">Expired {{ d.expiry_date|d }}</span>{% elif d.expires_soon %}<span class="badge warn">{{ d.expiry_date|d }}</span>{% else %}{{ d.expiry_date|d }}{% endif %}</td>
+    <td class="num"><b>{{ d.quantity }}</b> {{ d.unit }}</td><td class="num">{{ d.reorder_level }}</td>
+    <td>{% if not d.is_active %}<span class="badge">Inactive</span>{% elif d.quantity == 0 %}<span class="badge red">Out of stock</span>{% elif d.is_low %}<span class="badge red">Low stock</span>{% else %}<span class="badge green">OK</span>{% endif %}</td>
+    <td class="btn-row">{% if d.is_active and d.quantity > 0 and not d.is_expired %}<a class="btn btn-sm btn-dark" href="{{ url_for('nurse.emergency_use', drug_id=d.id) }}">Use</a>{% endif %}<a class="btn btn-sm" href="{{ url_for('nurse.emergency_stock', drug_id=d.id) }}">Stock</a><a class="btn btn-sm btn-outline" href="{{ url_for('nurse.emergency_drug_form', drug_id=d.id) }}">Edit</a></td></tr>
+  {% else %}<tr><td colspan="7" class="empty">No emergency drugs yet.</td></tr>{% endfor %}
+</table></div></div>
+<div class="card"><div class="card-head"><h3>Recent uses</h3><a href="{{ url_for('nurse.emergency_log') }}">Full log &rarr;</a></div><div class="table-wrap"><table>
+  <tr><th>When</th><th>Patient</th><th>Drug</th><th class="num">Qty</th><th>Reason</th><th>Given by</th></tr>
+  {% for u in recent %}
+  <tr><td>{{ u.created_at|dt }}</td><td>{{ patient_link(u.patient) }}</td><td>{{ u.drug.label }}</td><td class="num">{{ u.quantity }} {{ u.drug.unit }}</td><td>{{ u.reason }}</td><td>{{ u.administered_by.full_name }}</td></tr>
+  {% else %}<tr><td colspan="6" class="empty">No emergency drugs used yet.</td></tr>{% endfor %}
+</table></div></div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'base.html' %}{% from '_macros.html' import field, select %}
+{% block title %}{{ 'Add' if is_new else 'Edit' }} drug{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{{ 'Add drug' if is_new else 'Edit ' ~ drug.label }}</h1></div>
+<form method="post" class="card" style="max-width:820px"><div class="form-grid">
+  {{ field('name', 'Drug name', drug.name, required=True) }}
+  {{ select('form', 'Form', ['Tablet','Capsule','Syrup','Suspension','Injection','Infusion','Cream','Drops','Sachet','Inhaler','Other'], drug.form) }}
+  {{ field('strength', 'Strength', drug.strength, placeholder='500mg') }}
+  {{ field('unit_price', 'Unit price', drug.unit_price, required=True) }}
+  {{ field('reorder_level', 'Reorder level', drug.reorder_level or 10) }}
+  {{ field('batch_no', 'Batch no.', drug.batch_no) }}
+  {{ field('expiry_date', 'Expiry date', drug.expiry_date.isoformat() if drug.expiry_date else '', type='date') }}
+  {% if is_new %}{{ field('opening_quantity', 'Opening quantity', 0) }}{% endif %}
+</div>
+<label class="check"><input type="checkbox" name="is_active" value="1" {% if drug.is_active %}checked{% endif %}> Active (available for prescribing)</label>
+<div class="btn-row" style="margin-top:1rem"><button class="btn">Save</button><a class="btn btn-outline" href="{{ url_for('pharmacy.inventory') }}">Cancel</a></div></form>
+{% endblock %}

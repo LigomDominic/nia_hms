@@ -1,0 +1,20 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge, patient_link %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Hospital overview</h1><p>Admin can perform every role's actions.</p></div>
+  <div class="btn-row"><a class="btn" href="{{ url_for('cashier.register') }}">+ Register patient</a><a class="btn btn-dark" href="{{ url_for('admin.user_form') }}">+ Add staff</a></div></div>
+<div class="grid grid-4" style="margin-bottom:1.2rem">
+  <div class="stat dark"><div class="label">Revenue today (cash/POS/transfer)</div><div class="value">{{ stats.revenue_today|money }}</div></div>
+  <div class="stat"><div class="label">Patients (new today)</div><div class="value">{{ stats.patients }} <small>(+{{ stats.new_today }})</small></div></div>
+  <div class="stat"><div class="label">Held in e-wallets</div><div class="value">{{ stats.wallet_held|money }}</div></div>
+  <div class="stat"><div class="label">Outstanding bills</div><div class="value">{{ stats.outstanding|money }}</div></div>
+  <div class="stat"><div class="label">Waiting for doctor</div><div class="value">{{ stats.waiting }}</div></div>
+  <div class="stat"><div class="label">Lab queue</div><div class="value">{{ stats.lab_queue }}</div></div>
+  <div class="stat"><div class="label">Pharmacy queue</div><div class="value">{{ stats.rx_queue }}</div></div>
+  <div class="stat"><div class="label">Low stock (drugs / store)</div><div class="value">{{ stats.low_drugs }} / {{ stats.low_store }}</div></div>
+</div>
+<div class="card"><div class="card-head"><h2>Recent registrations</h2><a href="{{ url_for('patients.index') }}">All patients →</a></div><table>
+  <tr><th>Patient</th><th>Registered</th><th>Status</th><th class="num">Wallet</th><th class="num">Outstanding</th></tr>
+  {% for p in recent %}<tr><td>{{ patient_link(p) }}</td><td>{{ p.created_at|dt }}</td><td>{{ badge(p.status, p.status) }}</td><td class="num">{{ p.wallet_balance|money }}</td><td class="num">{{ p.outstanding_balance|money }}</td></tr>
+  {% else %}<tr><td colspan="5" class="empty">No patients yet.</td></tr>{% endfor %}</table></div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Walk-in customer{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Walk-in lab customer</h1><p>Start a lab request for someone without a consultation - either an existing patient or a one-off customer.</p></div></div>
+<form method="post" class="card" style="max-width:640px">
+  <fieldset><legend>Existing patient</legend>
+    <div class="field"><label>Hospital ID</label><input name="hospital_id" value="{{ q }}" placeholder="e.g. NIA-10/26-4821"></div>
+    <p class="muted">Leave everything else empty and submit to continue with this patient.</p>
+  </fieldset>
+  <fieldset><legend>Or quick-register a one-off customer (no card fee)</legend>
+    <div class="form-grid">
+      <div class="field"><label>First name</label><input name="first_name"></div>
+      <div class="field"><label>Last name</label><input name="last_name"></div>
+      <div class="field"><label>Other names</label><input name="other_names"></div>
+      <div class="field"><label>Gender</label><select name="gender"><option value=""></option><option>Female</option><option>Male</option></select></div>
+      <div class="field"><label>Phone</label><input name="phone"></div>
+    </div>
+    <p class="muted">A hospital ID is generated automatically so billing and results still work.</p>
+  </fieldset>
+  <div class="btn-row"><button class="btn btn-lg">Continue to test selection</button>
+    <a class="btn btn-outline" href="{{ url_for('lab.dashboard') }}">Cancel</a></div>
+</form>
+{% endblock %}

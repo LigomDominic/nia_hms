@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Register patient{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Register new patient</h1><p>Only Cashiers and Admins can register first-time patients. A unique hospital ID is issued on save.</p></div></div>
+<form method="post" class="card">
+  {% include 'patients/_fields.html' %}
+  <fieldset>
+    <legend>Card fee & optional wallet deposit</legend>
+    <div class="form-grid">
+      <div class="field"><label>Card / registration fee</label><input value="{{ card_fee|money }}" disabled></div>
+      <div class="field"><label for="card_method">Payment method *</label><select name="card_method" id="card_method" required>
+        {% for k, v in methods.items() %}<option value="{{ k }}" {% if form.get('card_method') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Payment reference (POS / transfer)</label><input name="reference" value="{{ form.get('reference','') }}"></div>
+      <div class="field"><label>Initial e-wallet deposit (optional)</label><input name="wallet_deposit" value="{{ form.get('wallet_deposit','') }}" placeholder="0.00"></div>
+    </div>
+  </fieldset>
+  {% include 'cashier/_consult_fields.html' %}
+  <div class="btn-row"><button class="btn btn-lg" type="submit">Register, collect card fee & send to doctor</button></div>
+</form>
+{% endblock %}

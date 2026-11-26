@@ -1,0 +1,103 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge %}
+{% block title %}Lab request {{ docno('lab', req.id) }}{% endblock %}
+{% block content %}
+{% set locked = req.status == 'completed' %}
+{% set micro_items = req.items|selectattr('is_micro')|list %}
+{% set plain_items = req.items|rejectattr('is_micro')|rejectattr('result_template')|list %}
+{% set tpl_items = req.items|rejectattr('is_micro')|selectattr('result_template')|list %}
+<div class="page-head"><div><h1>Lab request {{ docno('lab', req.id) }}</h1><p>{{ req.patient.full_name }} · <span class="mono">{{ req.patient.hospital_id }}</span> · requested by {{ req.requester_label }} · {{ req.created_at|dt }}</p></div>{{ badge(req.status, req.status_label) }}</div>
+{% if req.clinical_notes %}<div class="flash info">Doctor's note: {{ req.clinical_notes }}</div>{% endif %}
+<form method="post" class="card">
+  {% if plain_items %}
+  <table><tr><th>Test</th><th>Reference range</th><th>Result</th><th>Unit</th><th>Flag</th></tr>
+    {% for i in plain_items %}
+    <tr><td><b>{{ i.test_name }}</b></td><td>{{ i.reference_range or '-' }}</td>
+      <td><input name="result_{{ i.id }}" value="{{ i.result or '' }}" {% if locked %}disabled{% endif %}></td><td>{{ i.unit or '' }}</td>
+      <td><select name="flag_{{ i.id }}" {% if locked %}disabled{% endif %}>{% for f in flags %}<option value="{{ f }}" {% if i.flag == f %}selected{% endif %}>{{ f or '--' }}</option>{% endfor %}</select></td></tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+  {% for i in tpl_items %}
+  {% set tpl = i.result_template %}
+  {% set vals = i.result_values %}
+  <fieldset class="micro-form">
+    <legend>{{ i.test_name }} - {{ tpl.label }}</legend>
+    <div class="table-wrap"><table class="micro-entry">
+      <tr><th>Analyte</th><th>Result</th><th>Unit</th><th>Reference</th><th>Flag</th></tr>
+      {% for f in tpl.fields %}
+      {% set v = vals.get(f.n, {}) %}
+      <tr>
+        <td>{{ f.n }}</td>
+        <td>{% if f.k == 'sel' %}
+          <select name="res_{{ i.id }}_{{ loop.index0 }}" {% if locked %}disabled{% endif %}>
+            <option value=""></option>
+            {% for o in f.o %}<option value="{{ o }}" {% if v.v == o %}selected{% endif %}>{{ o }}</option>{% endfor %}
+          </select>
+        {% else %}
+          <input name="res_{{ i.id }}_{{ loop.index0 }}" value="{{ v.v or '' }}" {% if locked %}disabled{% endif %}>
+        {% endif %}</td>
+        <td>{{ f.u or i.unit or '' }}</td><td>{{ f.r or i.reference_range or '' }}</td>
+        <td><select name="rfl_{{ i.id }}_{{ loop.index0 }}" {% if locked %}disabled{% endif %}>
+          {% for fl in flags %}<option value="{{ fl }}" {% if v.f == fl %}selected{% endif %}>{{ fl or '--' }}</option>{% endfor %}
+        </select></td>
+      </tr>
+      {% endfor %}
+    </table></div>
+  </fieldset>
+  {% endfor %}
+  {% for i in micro_items %}
+  {% set m = i.micro %}
+  {% set sel = i.micro_sel %}
+  <fieldset class="micro-form">
+    <legend>{{ i.test_name }} - Microbiology (MCS) result sheet</legend>
+    <div class="form-grid">
+      <div class="field"><label>Specimen</label><input name="micro_specimen_{{ i.id }}" value="{{ m.specimen or i.test_name }}" {% if locked %}disabled{% endif %}></div>
+      <div class="field"><label>Macroscopy</label><input name="micro_macroscopy_{{ i.id }}" data-voice value="{{ m.macroscopy or '' }}" {% if locked %}disabled{% endif %}></div>
+      <div class="field"><label>Microscopy</label><input name="micro_microscopy_{{ i.id }}" data-voice value="{{ m.microscopy or '' }}" placeholder="e.g. Pus cells few seen" {% if locked %}disabled{% endif %}></div>
+      <div class="field"><label>Gram's stain</label><input name="micro_gram_stain_{{ i.id }}" data-voice value="{{ m.gram_stain or '' }}" placeholder="e.g. Gram+ ve cocci" {% if locked %}disabled{% endif %}></div>
+      <div class="field" style="grid-column:1/-1"><label>Culture</label><input name="micro_culture_{{ i.id }}" data-voice value="{{ m.culture or '' }}" placeholder="e.g. Yielded moderate growth of staphylococcus spp" {% if locked %}disabled{% endif %}></div>
+    </div>
+    <div class="table-wrap"><table class="micro-entry">
+      <tr><th>Drugs (Gram +ve)</th><th>S / R</th><th>Drugs (Gram &minus;ve)</th><th>S / R</th></tr>
+      {% for pos, neg in micro_rows %}
+      <tr>
+        <td>{{ pos }}<input type="hidden" name="mgr_{{ i.id }}" value="pos"><input type="hidden" name="mdr_{{ i.id }}" value="{{ pos }}"></td>
+        <td class="micro-res"><select name="mre_{{ i.id }}" {% if locked %}disabled{% endif %}>
+          <option value=""></option><option value="S" {% if sel.get('pos:' ~ pos) == 'S' %}selected{% endif %}>S</option><option value="R" {% if sel.get('pos:' ~ pos) == 'R' %}selected{% endif %}>R</option>
+        </select></td>
+        <td>{% if neg %}{{ neg }}<input type="hidden" name="mgr_{{ i.id }}" value="neg"><input type="hidden" name="mdr_{{ i.id }}" value="{{ neg }}">{% endif %}</td>
+        <td class="micro-res">{% if neg %}<select name="mre_{{ i.id }}" {% if locked %}disabled{% endif %}>
+          <option value=""></option><option value="S" {% if sel.get('neg:' ~ neg) == 'S' %}selected{% endif %}>S</option><option value="R" {% if sel.get('neg:' ~ neg) == 'R' %}selected{% endif %}>R</option>
+        </select>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table></div>
+    <p class="muted" style="margin:.8rem 0 .3rem">Other antibiotics tested (not on the standard panel)</p>
+    <table class="micro-entry micro-extra">
+      {% for n in range(4) %}
+      {% set ex = i.micro_extra[n] if i.micro_extra|length > n else none %}
+      <tr>
+        <td><input name="mdr_{{ i.id }}" value="{{ ex.name if ex else '' }}" placeholder="Antibiotic name" {% if locked %}disabled{% endif %}></td>
+        <td><select name="mgr_{{ i.id }}" {% if locked %}disabled{% endif %}>
+          <option value="pos" {% if ex and ex.group == 'pos' %}selected{% endif %}>Gram +ve</option>
+          <option value="neg" {% if ex and ex.group == 'neg' %}selected{% endif %}>Gram &minus;ve</option>
+        </select></td>
+        <td><select name="mre_{{ i.id }}" {% if locked %}disabled{% endif %}>
+          <option value=""></option><option value="S" {% if ex and ex.res == 'S' %}selected{% endif %}>S</option><option value="R" {% if ex and ex.res == 'R' %}selected{% endif %}>R</option>
+        </select></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </fieldset>
+  {% endfor %}
+  <div class="field" style="margin-top:1rem"><label>Lab scientist's comment</label><textarea name="lab_comment" data-voice {% if locked %}disabled{% endif %}>{{ req.lab_comment or '' }}</textarea></div>
+  {% if req.status != 'completed' %}
+  <fieldset><legend>Send result to patient</legend>
+    <label class="check"><input type="radio" name="delivery" value="email" {% if req.patient.email %}checked{% else %}disabled{% endif %}> Email to {{ req.patient.email or '(no email on file)' }}</label>
+    <label class="check"><input type="radio" name="delivery" value="manual" {% if not req.patient.email %}checked{% endif %}> Manual collection (printed copy)</label>
+    <p class="muted" style="margin:.4rem 0 .6rem">The result is always posted to the requesting doctor.</p>
+  </fieldset>
+  <div class="btn-row"><button class="btn btn-outline" name="action" value="save">Save progress</button><button class="btn btn-lg" name="action" value="complete">Post result to doctor & patient</button></div>
+  {% endif %}
+</form>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Walk-in lab request · {{ p.full_name }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Walk-in lab request</h1>
+  <p><a href="{{ url_for('patients.profile', hospital_id=p.hospital_id) }}"><b>{{ p.full_name }}</b></a> · <span class="mono">{{ p.hospital_id }}</span> · {{ p.gender or '-' }}{% if p.age is not none %} · {{ p.age }} yrs{% endif %} · Wallet {{ p.wallet_balance|money }}</p></div></div>
+<form method="post" class="card" style="max-width:860px">
+  <p class="muted" style="margin-top:0">For patients who come straight to the lab without a consultation. A bill is raised to the Cashier (or charged to the wallet) and the request reaches the Lab once paid.</p>
+  <div style="max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:.5rem .8rem;margin-bottom:.8rem">
+    {% for cat, group in tests|groupby('category_label') %}<div class="test-cat">{{ cat }}</div>{% for t in group %}<label class="check" style="justify-content:space-between"><span><input type="checkbox" name="test_ids" value="{{ t.id }}">{{ t.name }}{% if t.sample_type %} <small class="muted">({{ t.sample_type }})</small>{% endif %}</span><small>{{ t.price|money }}</small></label>{% endfor %}{% else %}<p class="muted">No lab tests have been set up yet. An admin can add them under Lab Test Catalog.</p>{% endfor %}
+  </div>
+  <div class="form-grid">
+    <div class="field"><label>Referring doctor / facility (optional)</label><input name="referring_doctor" placeholder="e.g. Dr. Musa - Garki Clinic"></div>
+  </div>
+  <div class="btn-row"><button class="btn btn-lg">Create request &amp; collect payment</button>
+    <a class="btn btn-outline" href="{{ url_for('patients.profile', hospital_id=p.hospital_id) }}">Cancel</a></div>
+</form>
+{% endblock %}

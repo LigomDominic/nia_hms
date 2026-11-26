@@ -1,0 +1,34 @@
+{% macro badge(status, label=None) -%}
+{%- set cls = {
+  'paid': 'green', 'completed': 'green', 'dispensed': 'green', 'emailed': 'green', 'collected': 'green', 'done': 'green',
+  'unpaid': 'red', 'awaiting_payment': 'warn', 'part_paid': 'warn', 'waiting': 'warn', 'pending': 'warn',
+  'email_failed': 'red', 'awaiting_collection': 'blue', 'sent_to_lab': 'blue', 'ready_to_dispense': 'blue',
+  'in_progress': 'blue', 'in_consultation': 'blue', 'cancelled': '', 'Admitted': 'warn', 'Outpatient': 'green',
+  'Discharged': 'blue', 'Inactive': '', 'deposit': 'green', 'debit': 'red', 'refund': 'blue'
+}.get(status, '') -%}
+<span class="badge {{ cls }}">{{ label or status|replace('_', ' ')|capitalize }}</span>
+{%- endmacro %}
+
+{% macro field(name, label, value='', type='text', required=False, placeholder='') -%}
+<div class="field">
+  <label for="{{ name }}">{{ label }}{% if required %} *{% endif %}</label>
+  <input type="{{ type }}" id="{{ name }}" name="{{ name }}" value="{{ value if value is not none else '' }}" {% if required %}required{% endif %} placeholder="{{ placeholder }}">
+</div>
+{%- endmacro %}
+
+{% macro select(name, label, options, selected='', required=False, blank='-- Select --') -%}
+<div class="field">
+  <label for="{{ name }}">{{ label }}{% if required %} *{% endif %}</label>
+  <select id="{{ name }}" name="{{ name }}" {% if required %}required{% endif %}>
+    {% if blank %}<option value="">{{ blank }}</option>{% endif %}
+    {% for opt in options %}
+      {% if opt is string %}{% set val, txt = opt, opt %}{% else %}{% set val, txt = opt[0], opt[1] %}{% endif %}
+      <option value="{{ val }}" {% if (selected|string) == (val|string) %}selected{% endif %}>{{ txt }}</option>
+    {% endfor %}
+  </select>
+</div>
+{%- endmacro %}
+
+{% macro patient_link(p) -%}
+<a href="{{ url_for('patients.profile', hospital_id=p.hospital_id) }}"><b>{{ p.full_name }}</b></a><br><small class="mono">{{ p.hospital_id }}</small>
+{%- endmacro %}

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge, patient_link %}
+{% block title %}My patients{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ 'All consultations' if current_user.role == 'admin' else 'My patients' }}</h1><p>Patients assigned to you by the cashier for face-to-face consultation.</p></div></div>
+{% if new_results %}
+<div class="card" style="border-left:5px solid var(--green-dark)"><div class="card-head"><h2>New lab results ({{ new_results|length }})</h2></div>
+  <table><tr><th>Patient</th><th>Tests</th><th>Completed</th><th></th></tr>
+  {% for r in new_results %}<tr><td>{{ patient_link(r.patient) }}</td><td>{{ r.test_names }}</td><td>{{ r.completed_at|dt }}</td><td><a class="btn btn-sm" href="{{ url_for('doctor.result', req_id=r.id) }}">View result</a></td></tr>{% endfor %}</table></div>
+{% endif %}
+<div class="card"><div class="card-head"><h2>Waiting / in consultation ({{ visits|length }})</h2></div><div class="table-wrap"><table>
+  <tr><th>Arrived</th><th>Patient</th><th>Complaint</th><th>Vitals</th><th>Status</th>{% if current_user.role == 'admin' %}<th>Doctor</th>{% endif %}<th></th></tr>
+  {% for v in visits %}
+  <tr><td>{{ v.created_at|dt }}</td><td>{{ patient_link(v.patient) }}</td><td>{{ v.complaint or '-' }}</td>
+    <td>{% if v.has_vitals %}<span class="badge green">Taken</span>{% else %}<span class="badge warn">Pending</span>{% endif %}</td>
+    <td>{{ badge(v.status, v.status_label) }}</td>{% if current_user.role == 'admin' %}<td>{{ v.doctor.display_name if v.doctor else '-' }}</td>{% endif %}
+    <td><a class="btn btn-sm btn-dark" href="{{ url_for('doctor.consult', visit_id=v.id) }}">Consult</a></td></tr>
+  {% else %}<tr><td colspan="7" class="empty">No patients waiting.</td></tr>{% endfor %}
+</table></div></div>
+<div class="grid grid-2">
+  <div class="card"><h3>Pending lab requests</h3><table>
+    {% for r in pending_labs %}<tr><td>{{ r.patient.full_name }}<br><small>{{ r.test_names }}</small></td><td>{{ badge(r.status, r.status_label) }}</td></tr>
+    {% else %}<tr><td class="empty">None.</td></tr>{% endfor %}</table></div>
+  <div class="card"><h3>Recently completed</h3><table>
+    {% for v in recent %}<tr><td>{{ patient_link(v.patient) }}</td><td>{{ v.diagnosis or '-' }}</td><td>{{ v.completed_at|dt }}</td></tr>
+    {% else %}<tr><td class="empty">None.</td></tr>{% endfor %}</table></div>
+</div>
+{% endblock %}

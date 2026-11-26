@@ -1,0 +1,11 @@
+Dear {{ req.patient.full_name }},
+
+Your laboratory result from {{ HOSPITAL_NAME }} (Hospital ID {{ req.patient.hospital_id }}, request {{ docno('lab', req.id) }}) is ready.
+
+{% for i in req.items %}- {{ i.test_name }}: {{ i.result }} {{ i.unit or '' }} {% if i.reference_range %}(ref: {{ i.reference_range }}){% endif %} {{ i.flag or '' }}{% if i.is_micro and i.micro_line %}
+    {{ i.micro_line }}{% endif %}
+{% endfor %}
+{% if req.lab_comment %}Comment: {{ req.lab_comment }}{% endif %}
+
+Requested by: {{ req.requester_label }}
+Please see your doctor to discuss these results.

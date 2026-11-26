@@ -1,0 +1,45 @@
+{% extends 'base.html' %}{% from '_macros.html' import badge %}
+{% block title %}Requisition #{{ req.id }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Requisition #{{ req.id }} · {{ req.station }}</h1>
+    <p>Requested by {{ req.requested_by.full_name }} · {{ req.created_at|dt }}{% if req.note %} · Note: {{ req.note }}{% endif %}</p></div>
+  {{ badge(req.status, req.status_label) }}</div>
+
+{% set can_issue = req.status == 'pending' and can_module('requisitions', 'manage') and current_user.role in ('admin', 'pharmacist') %}
+<form method="post" action="{{ url_for('requisitions.issue', req_id=req.id) }}" class="card">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="table-wrap"><table>
+    <thead><tr><th>Item</th><th>In stock</th><th class="num">Requested</th><th class="num">Issued</th><th>Note</th></tr></thead>
+    <tbody>
+      {% for i in req.items %}
+      <tr>
+        <td><b>{{ i.item_name }}</b>{% if i.drug %}<br><small class="muted">{{ i.drug.form or '' }} {{ i.drug.strength or '' }} · batch {{ i.drug.batch_no or '-' }}</small>{% else %}<br><small class="muted">Not a stocked drug</small>{% endif %}</td>
+        <td class="num">{% if i.drug %}{{ i.drug.quantity }}{% if i.drug.quantity < i.quantity_requested %}<br><small class="badge red">short</small>{% endif %}{% else %}-{% endif %}</td>
+        <td class="num">{{ i.quantity_requested }}</td>
+        <td class="num">
+          {% if can_issue %}
+            <input type="number" name="issue_{{ i.id }}" min="0" max="{{ i.quantity_requested }}"
+                   value="{{ i.quantity_requested if i.drug is none or i.drug.quantity >= i.quantity_requested else i.drug.quantity }}" style="width:80px">
+          {% else %}{{ i.quantity_issued if i.quantity_issued is not none else '-' }}{% endif %}
+        </td>
+        <td>{{ i.note or '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  {% if can_issue %}
+  <div class="field" style="margin-top:.8rem"><label>Issue note (optional)</label>
+    <input name="action_note" maxlength="250" placeholder="e.g. Partial issue - syringes out of stock"></div>
+  <div class="btn-row">
+    <button class="btn btn-lg">Issue items &amp; update stock</button>
+    <button class="btn btn-outline" formaction="{{ url_for('requisitions.reject', req_id=req.id) }}"
+            formnovalidate onclick="return confirm('Reject this request entirely?')">Reject request</button>
+  </div>
+  {% elif req.action_note %}<p class="muted" style="margin-bottom:0">Pharmacy note: {{ req.action_note }}</p>{% endif %}
+</form>
+
+{% if req.status != 'pending' %}
+<p class="muted">{{ req.status_label }} by {{ req.actioned_by.full_name if req.actioned_by else '-' }} · {{ req.actioned_at|dt }}</p>
+{% endif %}
+<div class="btn-row"><a class="btn btn-outline" href="{{ url_for('requisitions.index') }}">Back to requests</a></div>
+{% endblock %}

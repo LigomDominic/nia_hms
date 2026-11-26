@@ -1,0 +1,43 @@
+{% set p = anc.patient %}
+<table class="anc-sheet">
+  <tr><th colspan="9" class="as-title">Ante-Natal Record</th></tr>
+  <tr><td class="lbl">Consultant</td><td colspan="3">{{ anc.consultant.display_name if anc.consultant }}</td>
+    <td class="lbl">Booked</td><td colspan="4">{{ anc.created_at|d }}{% if anc.booked_by %} by {{ anc.booked_by.full_name }}{% endif %}</td></tr>
+  <tr class="ah"><td>Surname</td><td colspan="2">First name(s)</td><td colspan="2">Hospital No</td><td colspan="2">Age / Sex</td><td colspan="2">Ethnic group</td></tr>
+  <tr class="av"><td>{{ p.last_name }}</td><td colspan="2">{{ p.first_name }}{% if p.other_names %} {{ p.other_names }}{% endif %}</td>
+    <td colspan="2" class="mono">{{ p.hospital_id }}</td><td colspan="2">{{ p.age if p.age is not none else '-' }} / {{ (p.gender or '')[:1] }}</td><td colspan="2">{{ anc.ethnic_group }}</td></tr>
+  <tr class="ah"><td colspan="4">Address</td><td colspan="2">Occupation</td><td colspan="3">Husband's occupation</td></tr>
+  <tr class="av"><td colspan="4">{{ p.address }}</td><td colspan="2">{{ anc.occupation }}</td><td colspan="3">{{ anc.husband_occupation }}</td></tr>
+  <tr><td class="lbl">Special points</td><td colspan="8">{{ anc.special_points }}</td></tr>
+  <tr class="ah"><td colspan="4">Past obstetric history</td><td colspan="5">Past medical history</td></tr>
+  <tr class="av tall"><td colspan="4">{{ anc.past_obstetric_history }}</td><td colspan="5">{{ anc.past_medical_history }}</td></tr>
+  <tr><td class="lbl">Family history</td><td colspan="5">{{ anc.family_history }}</td>
+    <td class="lbl">G / P</td><td colspan="2">G{{ anc.gravida or '-' }} P{{ anc.para or '-' }}</td></tr>
+  <tr class="ah"><td colspan="2">LMP</td><td colspan="3">EDD</td><td colspan="2">Date quickening</td><td>Height</td><td>Weight</td></tr>
+  <tr class="av"><td colspan="2">{{ anc.lmp|d }}</td><td colspan="3"><b>{{ anc.edd|d }}</b></td><td colspan="2">{{ anc.quickening_date|d }}</td><td>{{ anc.height }}</td><td>{{ anc.weight }}</td></tr>
+  <tr><td class="lbl" rowspan="2">History</td>{% for f, l in anc.HISTORY_FIELDS %}<td class="ah2">{{ l }}</td>{% endfor %}<td class="ah2" colspan="2">Date quickening</td></tr>
+  <tr>{% for f, l in anc.HISTORY_FIELDS %}<td>{{ anc|attr(f) or '-' }}</td>{% endfor %}<td colspan="2">{{ anc.quickening_date|d }}</td></tr>
+  <tr><td class="lbl" rowspan="2">First examination</td>{% for f, l in anc.EXAM_FIELDS %}<td class="ah2">{{ l }}</td>{% endfor %}<td class="ah2">Date / Sign</td></tr>
+  <tr>{% for f, l in anc.EXAM_FIELDS %}<td>{{ anc|attr(f) or '-' }}</td>{% endfor %}<td>{{ anc.ex_date|d }}{% if anc.ex_by %}<br><small>{{ anc.ex_by.full_name }}</small>{% endif %}</td></tr>
+  <tr><td class="lbl">Special observations</td><td colspan="8">{{ anc.ex_observations }}</td></tr>
+  <tr><td class="lbl" rowspan="{{ anc.INVESTIGATIONS|length + 1 }}">Investigations</td>
+    <td colspan="4" class="ah2">Test</td><td colspan="4" class="ah2">Result</td></tr>
+  {% for f, l in anc.INVESTIGATIONS %}
+  <tr><td colspan="4">{{ l }}</td><td colspan="4"><b>{{ anc|attr(f) }}</b>{% if loop.first and anc.inv_date %} <small>({{ anc.inv_date|d }})</small>{% endif %}</td></tr>
+  {% endfor %}
+  <tr><td colspan="9" class="as-sub" id="visits">Follow-up visits</td></tr>
+  <tr><td colspan="9" style="padding:0;border:none"><table class="anc-visits">
+    <tr><th>Date</th><th>G/Age</th><th>Wt</th><th>Urine Alb</th><th>Urine Sugar</th><th>B.P</th><th>SFH</th>
+      <th>Presentation / position / descent</th><th>FHR</th><th>Oedema</th><th>PCV</th><th>Next visit</th><th>Name</th></tr>
+    {% for v in anc.visits %}
+    <tr><td>{{ v.visit_date|d }}</td><td>{{ v.gest_age }}</td><td>{{ v.weight }}</td><td>{{ v.urine_alb }}</td><td>{{ v.urine_sugar }}</td>
+      <td>{{ v.bp }}</td><td>{{ v.sfh }}</td><td>{{ v.presentation }}</td><td>{{ v.fhr }}</td><td>{{ v.oedema }}</td><td>{{ v.pcv }}</td>
+      <td>{{ v.next_visit|d }}</td><td><small>{{ v.seen_by.full_name if v.seen_by }}</small></td></tr>
+    {% else %}<tr><td colspan="13" class="empty">No visits recorded yet.</td></tr>{% endfor %}
+  </table></td></tr>
+  <tr class="ah"><td colspan="9">Examination at 35/7 weeks</td></tr>
+  <tr><td class="lbl">Head/brim relationship</td><td colspan="3">{{ anc.exam_head_brim }}</td>
+    <td class="lbl">Pelvic capacity</td><td>{{ anc.exam_pelvic_capacity }}</td>
+    <td class="lbl">Doctor sign / date</td><td colspan="2">{{ anc.exam_by.full_name if anc.exam_by }}{% if anc.exam_date %}<br><small>{{ anc.exam_date|d }}</small>{% endif %}</td></tr>
+  <tr><td class="lbl">Note</td><td colspan="8">{{ anc.notes }}</td></tr>
+</table>
